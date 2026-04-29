@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="HannaDemoApp.Features.LogDetail.HNALogDetailPage"
+             Shell.TabBarIsVisible="False"
+             Title="Log Details">
+
+       <Grid RowDefinitions="Auto,Auto,Auto,*">
+
+              <VerticalStackLayout Grid.Row="0"
+                                   Spacing="8"
+                                   IsVisible="{Binding IsLoading}">
+                     <ActivityIndicator IsRunning="{Binding IsLoading}"
+                                        HeightRequest="24"
+                                        WidthRequest="24"/>
+                     <Label Text="Loading log details..."
+                            FontSize="15"
+                            TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+              </VerticalStackLayout>
+
+              <Border Grid.Row="1"
+                      BackgroundColor="{AppThemeBinding Light={StaticResource HannaCardMint}, Dark={StaticResource HannaCardMintDark}}"
+                      Padding="16"
+                      StrokeThickness="0"
+                      StrokeShape="RoundRectangle 12">
+                     <VerticalStackLayout Spacing="8">
+                            <Label Text="{Binding DeviceName}"
+                                   FontSize="18"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"/>
+                            <Label Text="{Binding StartDateText, StringFormat='Start Date: {0}'}"
+                                   FontSize="12"
+                                   TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+                            <Label Text="{Binding EndDateText, StringFormat='End Date: {0}'}"
+                                   FontSize="12"
+                                   TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+                     </VerticalStackLayout>
+              </Border>
+
+              <Label Grid.Row="2"
+                     Text="{Binding PlaceholderText}"
+                     FontSize="15"
+                     TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"
+                     IsVisible="{Binding HasNoLogs}"/>
+
+              <CollectionView Grid.Row="3"
+                              ItemsSource="{Binding LogRecords}"
+                              SelectionMode="None"
+                              IsVisible="{Binding HasLogs}">
+                     <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Vertical"/>
+                     </CollectionView.ItemsLayout>
+                     <CollectionView.Header>
+                            <Grid ColumnDefinitions="Auto,2*,4*"
+                                  Padding="12,8"
+                                  BackgroundColor="{AppThemeBinding Light={StaticResource HannaTableHeaderBg}, Dark={StaticResource HannaTableHeaderBgDark}}">
+                                   <Label Text="#Rec."
+                                          FontAttributes="Bold"
+                                          TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"
+                                          VerticalOptions="Center"
+                                          WidthRequest="60"/>
+                                   <Label Grid.Column="1"
+                                          Text="Date/Time"
+                                          FontAttributes="Bold"
+                                          TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"
+                                          Margin="10,0,0,0"/>
+                                   <Label Grid.Column="2"
+                                          Text="Measure Response"
+                                          FontAttributes="Bold"
+                                          TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"
+                                          Margin="10,0,0,0"/>
+                            </Grid>
+                     </CollectionView.Header>
+                     <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                   <Grid ColumnDefinitions="Auto,2*,4*"
+                                         Padding="12,8">
+                                          <Label Text="{Binding SerialNumber}"
+                                                 FontSize="10"
+                                                 TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"
+                                                 WidthRequest="60"/>
+                                          <Label Grid.Column="1"
+                                                 Text="{Binding Timestamp}"
+                                                 FontSize="10"
+                                                 TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"
+                                                 Margin="10,0,0,0"/>
+                                          <Label Grid.Column="2"
+                                                 Text="{Binding Response}"
+                                                 FontSize="10"
+                                                 TextColor="{AppThemeBinding Light={StaticResource HannaTextResponse}, Dark={StaticResource HannaTextResponseDark}}"
+                                                 LineBreakMode="WordWrap"
+                                                 Margin="10,0,0,0"/>
+                                   </Grid>
+                            </DataTemplate>
+                     </CollectionView.ItemTemplate>
+              </CollectionView>
+       </Grid>
+
+</ContentPage>

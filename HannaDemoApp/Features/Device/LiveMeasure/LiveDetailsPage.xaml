@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="HannaDemoApp.Features.Device.LiveMeasure.LiveDetailsPage"
+             Title="Live Details"
+             Shell.TabBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*"
+          Padding="16"
+          RowSpacing="16">
+
+        <!-- Header card for the selected live-measurement device -->
+        <Border StrokeThickness="0"
+                BackgroundColor="{AppThemeBinding Light={StaticResource HannaCardMint}, Dark={StaticResource HannaCardMintDark}}"
+                Padding="4"
+                StrokeShape="RoundRectangle 20">
+            <HorizontalStackLayout Padding="4"
+                                   VerticalOptions="Center">
+                <Image Source="halo_icon.png"
+                       Aspect="AspectFit"
+                       HeightRequest="60"
+                       WidthRequest="60"/>
+                <VerticalStackLayout Spacing="02"
+                                     VerticalOptions="Center">
+                    <Label Text="{Binding DeviceDisplayName}"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"/>
+                    <Label Text="{Binding BatteryStatusText}"
+                           FontSize="13"
+                           TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+                    <Label Text="{Binding TotalLiveCountText}"
+                           FontSize="13"
+                           TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+                </VerticalStackLayout>
+            </HorizontalStackLayout>
+
+        </Border>
+
+        <Grid Grid.Row="1">
+            <!-- Empty / not-ready state -->
+            <Border StrokeThickness="0"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource HannaSectionBg}, Dark={StaticResource HannaSectionBgDark}}"
+                    Padding="16"
+                    StrokeShape="RoundRectangle 20"
+                    IsVisible="{Binding ShowEmptyState}">
+                <Label Text="{Binding EmptyStateText}"
+                       FontSize="15"
+                       TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+            </Border>
+
+            <!-- Live measurement table -->
+            <Border
+                Padding="0"
+                StrokeThickness="0"
+                BackgroundColor="{AppThemeBinding Light={StaticResource HannaSectionBg}, Dark={StaticResource HannaSectionBgDark}}"
+                IsVisible="{Binding HasMeasurements}">
+                <Grid RowDefinitions="Auto,*"
+                      RowSpacing="8">
+                    <Grid ColumnDefinitions="Auto,*"
+                          ColumnSpacing="0">
+                        <Label Text="Date/Time"
+                               FontSize="12"
+                               WidthRequest="80"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+                        <Label Grid.Column="1"
+                               Text="Response"
+                               FontSize="12"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+                    </Grid>
+
+                    <CollectionView x:Name="MeasurementsView"
+                                    Grid.Row="1"
+                                    ItemsSource="{Binding MeasurementLogs}"
+                                    SelectionMode="None"
+                                    ItemsUpdatingScrollMode="KeepScrollOffset"
+                                    Loaded="OnMeasurementsLoaded"
+                                    Scrolled="OnMeasurementsScrolled">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Vertical"
+                                               ItemSpacing="0"/>
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="Auto,*"
+                                      ColumnSpacing="0"
+                                      Padding="0,3">
+                                    <Label Text="{Binding Timestamp}"
+                                           FontSize="10"
+                                           WidthRequest="80"
+                                           TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"/>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding Response}"
+                                           FontSize="10"
+                                           TextColor="{AppThemeBinding Light={StaticResource HannaTextResponse}, Dark={StaticResource HannaTextResponseDark}}"
+                                           LineBreakMode="WordWrap"/>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+
+</ContentPage>

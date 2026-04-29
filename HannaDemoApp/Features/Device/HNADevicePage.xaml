@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="HannaDemoApp.Features.Device.HNADevicePage"
+             Shell.TabBarIsVisible="False"
+             Title="Hanna Devices">
+
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="{Binding ScanButtonText}"
+                     Command="{Binding ToggleScanCommand}"
+                     Order="Primary"
+                     Priority="0"/>
+    </ContentPage.ToolbarItems>
+
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout Padding="16"
+                                 Spacing="16">
+
+                <!-- Connected Devices Section -->
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Connected Devices:"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"/>
+
+                    <Border StrokeThickness="0"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource HannaCardMint}, Dark={StaticResource HannaCardMintDark}}"
+                            Padding="16"
+                            StrokeShape="RoundRectangle 20"
+                            IsVisible="{Binding ShowConnectedEmptyState}">
+                        <Label Text="No connected devices yet. Tap 'Scan Devices' to find and connect to your Hanna devices."
+                               FontSize="15"
+                               TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+                    </Border>
+
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding ConnectedDevices}"
+                                         IsVisible="{Binding HasConnectedDevices}"
+                                         Spacing="8">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Border StrokeThickness="0"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource HannaCardGreen}, Dark={StaticResource HannaCardGreenDark}}"
+                                        Padding="8"
+                                        Margin="0,0,0,8"
+                                        StrokeShape="RoundRectangle 20">
+
+                                    <Grid ColumnDefinitions="*"
+                                          RowDefinitions="Auto,Auto,Auto"
+                                          RowSpacing="8">
+
+                                        <!-- 🔹 HEADER ROW (ICON + NAME + CHEVRON) -->
+                                        <Grid Grid.Row="0"
+                                              ColumnDefinitions="Auto,*,Auto"
+                                              ColumnSpacing="8"
+                                              VerticalOptions="Center"
+                                              HorizontalOptions="FillAndExpand">
+
+                                            <!-- Tap entire row -->
+                                            <Grid.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.MeasureLiveDetailsCommand}"
+                                                    CommandParameter="{Binding .}"/>
+                                            </Grid.GestureRecognizers>
+
+                                            <!-- Device Icon -->
+                                            <Image Grid.Column="0"
+                                                   Source="halo_icon.png"
+                                                   Aspect="AspectFit"
+                                                   HeightRequest="30"
+                                                   WidthRequest="30"
+                                                   VerticalOptions="Center"/>
+
+                                            <!-- Display Name -->
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding DisplayName}"
+                                                   FontSize="16"
+                                                   FontAttributes="Bold"
+                                                   VerticalOptions="Center"
+                                                   HorizontalOptions="FillAndExpand"
+                                                   LineBreakMode="TailTruncation"
+                                                   TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"/>
+
+                                            <!-- Chevron (perfect trailing) -->
+                                            <Image Grid.Column="2"
+                                                   VerticalOptions="Center"
+                                                   HorizontalOptions="End"
+                                                   Opacity="0.6"
+                                                   IsVisible="{Binding UsesLiveMeasurementUi}">
+                                                <Image.Source>
+                                                    <FontImageSource Glyph="&#x276F;"
+                                                                     Size="14"
+                                                                     Color="Gray"/>
+                                                </Image.Source>
+                                            </Image>
+
+                                        </Grid>
+
+                                        <!-- 🔹 ACTION BUTTONS -->
+                                        <Grid Grid.Row="1"
+                                              ColumnDefinitions="*,*,*"
+                                              ColumnSpacing="12">
+
+                                            <Button Text="Send Cmd"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ShowCommandsCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    BackgroundColor="{AppThemeBinding Light={StaticResource HannaBrandSecondary}, Dark={StaticResource HannaBrandSecondaryDark}}"
+                                                    TextColor="White"
+                                                    FontSize="10"
+                                                    HeightRequest="28"
+                                                    MinimumHeightRequest="0"
+                                                    Padding="6,0"
+                                                    CornerRadius="6"/>
+
+                                            <Button Grid.Column="1"
+                                                    Text="View Live"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.MeasureLiveDetailsCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    BackgroundColor="{AppThemeBinding Light={StaticResource HannaBrandPrimary}, Dark={StaticResource HannaBrandPrimaryDark}}"
+                                                    TextColor="White"
+                                                    FontSize="10"
+                                                    HeightRequest="28"
+                                                    MinimumHeightRequest="0"
+                                                    Padding="6,0"
+                                                    CornerRadius="6"
+                                                    IsVisible="{Binding UsesLiveMeasurementUi}"/>
+
+                                            <Button Grid.Column="2"
+                                                    Text="Disconnect"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DisconnectDeviceCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    BackgroundColor="{AppThemeBinding Light={StaticResource HannaBrandSecondary}, Dark={StaticResource HannaBrandSecondaryDark}}"
+                                                    TextColor="White"
+                                                    FontSize="10"
+                                                    HeightRequest="28"
+                                                    MinimumHeightRequest="0"
+                                                    Padding="6,0"
+                                                    CornerRadius="6"/>
+
+                                        </Grid>
+
+                                        <!-- 🔹 LIVE MEASUREMENTS -->
+                                        <Border Grid.Row="2"
+                                                Padding="8"
+                                                StrokeThickness="0"
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource HannaSectionBg}, Dark={StaticResource HannaSectionBgDark}}"
+                                                StrokeShape="RoundRectangle 16"
+                                                IsVisible="{Binding HasMeasurementLogs}">
+
+                                            <VerticalStackLayout Spacing="8">
+
+                                                <Label Text="{Binding ResponseHistoryTitle}"
+                                                       FontSize="16"
+                                                       FontAttributes="Bold"
+                                                       TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"/>
+
+                                                <Grid ColumnDefinitions="Auto,*"
+                                                      ColumnSpacing="2">
+                                                    <Label Text="Date/Time"
+                                                           FontSize="10"
+                                                           WidthRequest="80"
+                                                           FontAttributes="Bold"
+                                                           TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+                                                    <Label Grid.Column="1"
+                                                           Text="Response"
+                                                           FontSize="10"
+                                                           FontAttributes="Bold"
+                                                           TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+                                                </Grid>
+
+                                                <CollectionView HeightRequest="50"
+                                                                ItemsSource="{Binding MeasurementLogs}"
+                                                                SelectionMode="None"
+                                                                ItemsUpdatingScrollMode="KeepLastItemInView">
+
+                                                    <CollectionView.ItemsLayout>
+                                                        <LinearItemsLayout Orientation="Vertical"
+                                                                           ItemSpacing="0"/>
+                                                    </CollectionView.ItemsLayout>
+
+                                                    <CollectionView.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid ColumnDefinitions="Auto,*"
+                                                                  ColumnSpacing="2"
+                                                                  Padding="0,2">
+
+                                                                <Label Text="{Binding Timestamp}"
+                                                                       FontSize="10"
+                                                                       WidthRequest="80"
+                                                                       TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"/>
+
+                                                                <Label Grid.Column="1"
+                                                                       Text="{Binding Response}"
+                                                                       FontSize="10"
+                                                                       LineBreakMode="WordWrap"
+                                                                       TextColor="{AppThemeBinding Light={StaticResource HannaTextResponse}, Dark={StaticResource HannaTextResponseDark}}"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </CollectionView.ItemTemplate>
+                                                </CollectionView>
+                                            </VerticalStackLayout>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
+
+
+
+                <!---Available Devices Section -->
+                <VerticalStackLayout Spacing="12">
+                    <HorizontalStackLayout Spacing="8"
+                                           VerticalOptions="Center">
+                        <Label Text="Available Devices:"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"/>
+
+                        <ActivityIndicator IsRunning="{Binding ShowDeviceScanningState}"
+                                           IsVisible="{Binding ShowDeviceScanningState}"
+                                           Color="{AppThemeBinding Light={StaticResource HannaBrandPrimary}, Dark={StaticResource HannaBrandPrimaryDark}}"
+                                           WidthRequest="24"
+                                           HeightRequest="24"
+                                           HorizontalOptions="Center"/>
+                    </HorizontalStackLayout>
+                    <Border StrokeThickness="0"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource HannaSectionBg}, Dark={StaticResource HannaSectionBgDark}}"
+                            Padding="16"
+                            StrokeShape="RoundRectangle 20"
+                            IsVisible="{Binding ShowAvailableEmptyState}">
+
+                        <Label Text="{Binding AvailableDeviceStateText}"
+                               FontSize="15"
+                               TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+                    </Border>
+
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding AvailableDevices}"
+                                         IsVisible="{Binding HasAvailableDevices}"
+                                         Spacing="10">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Border StrokeThickness="1"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource HannaCardBg}, Dark={StaticResource HannaCardBgDark}}"
+                                        Padding="16"
+                                        Stroke="{AppThemeBinding Light={StaticResource HannaCardBorder}, Dark={StaticResource HannaCardBorderDark}}"
+                                        StrokeShape="RoundRectangle 20">
+                                    <Grid ColumnDefinitions="*,Auto"
+                                          RowDefinitions="Auto,Auto"
+                                          ColumnSpacing="12"
+                                          RowSpacing="6">
+                                        <Label Text="{Binding Name}"
+                                               FontSize="18"
+                                               FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"/>
+                                        <Label Grid.Row="1"
+                                               Text="{Binding Subtitle}"
+                                               FontSize="14"
+                                               TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+                                        <Grid Grid.Column="1"
+                                              Grid.RowSpan="2"
+                                              VerticalOptions="Center">
+                                            <Button Text="{Binding ConnectButtonText}"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ConnectDeviceCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    BackgroundColor="{AppThemeBinding Light={StaticResource HannaBrandPrimary}, Dark={StaticResource HannaBrandPrimaryDark}}"
+                                                    TextColor="White"
+                                                    CornerRadius="14"
+                                                    VerticalOptions="Center"
+                                                    IsEnabled="{Binding CanConnect}"/>
+                                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource HannaBrandPrimary}, Dark={StaticResource HannaBrandPrimaryDark}}"
+                                                    StrokeThickness="0"
+                                                    StrokeShape="RoundRectangle 14"
+                                                    Padding="14,10"
+                                                    IsVisible="{Binding IsConnecting}">
+                                                <HorizontalStackLayout Spacing="8"
+                                                                       VerticalOptions="Center">
+                                                    <ActivityIndicator IsRunning="True"
+                                                                       Color="White"
+                                                                       WidthRequest="18"
+                                                                       HeightRequest="18"
+                                                                       VerticalOptions="Center"/>
+                                                    <Label Text="Connecting..."
+                                                           TextColor="White"
+                                                           VerticalTextAlignment="Center"/>
+                                                </HorizontalStackLayout>
+                                            </Border>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Grid BackgroundColor="#66000000"
+              IsVisible="{Binding IsConnectionValidationInProgress}">
+            <Border HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    Padding="20"
+                    StrokeThickness="0"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource HannaCardBg}, Dark={StaticResource HannaCardBgDark}}"
+                    StrokeShape="RoundRectangle 20">
+                <VerticalStackLayout Spacing="12"
+                                     HorizontalOptions="Center">
+                    <ActivityIndicator IsRunning="{Binding IsConnectionValidationInProgress}"
+                                       Color="{AppThemeBinding Light={StaticResource HannaBrandPrimary}, Dark={StaticResource HannaBrandPrimaryDark}}"
+                                       WidthRequest="36"
+                                       HeightRequest="36"
+                                       HorizontalOptions="Center"/>
+                    <Label Text="Checking pairing and meter response..."
+                           HorizontalTextAlignment="Center"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"/>
+                    <Label Text="Please wait until bonding is confirmed."
+                           HorizontalTextAlignment="Center"
+                           FontSize="13"
+                           TextColor="{AppThemeBinding Light={StaticResource HannaTextSecondary}, Dark={StaticResource HannaTextSecondaryDark}}"/>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </Grid>
+
+</ContentPage>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="#007AFF"/>
+
+  <!-- Title -->
+  <text x="50%" y="38%"
+        text-anchor="middle"
+        fill="#FFFFFF"
+        font-size="48"
+        font-family="Arial"
+        font-weight="bold">
+    Hanna
+  </text>
+   <text x="50%" y="48%"
+        text-anchor="middle"
+        fill="#FFFFFF"
+        font-size="48"
+        font-family="Arial"
+        font-weight="bold">
+    ShinyBLE
+  </text>
+
+  <!-- Subtitle -->
+  <text x="50%" y="58%"
+        text-anchor="middle"
+        fill="#B0D9D8"
+        font-size="18"
+        font-family="Arial">
+    Smart Measurement. Wireless.
+  </text>
+
+</svg>

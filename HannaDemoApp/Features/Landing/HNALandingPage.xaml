@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="HannaDemoApp.Features.Landing.HNALandingPage"
+             Title="Hanna Lab">
+
+    <!-- <ContentPage.ToolbarItems>
+        <ToolbarItem 
+            IconImageSource="cloud_upload"
+            Order="Primary"
+            Priority="0"
+            Command="{Binding OnToolbarClickedCommand}"/>
+    </ContentPage.ToolbarItems> -->
+
+    <VerticalStackLayout Padding="16"
+                         Spacing="16"
+                         VerticalOptions="Center">
+
+        <Button Text="Connect Device"
+                Command="{Binding ConnectDeviceCommand}"
+                BackgroundColor="{AppThemeBinding Light={StaticResource HannaBrandPrimary}, Dark={StaticResource HannaBrandPrimaryDark}}"
+                TextColor="White"
+                HorizontalOptions="Fill"
+                Margin="40,0"
+                CornerRadius="16"
+                HeightRequest="52"
+                FontAttributes="Bold"
+                FontSize="18"/>
+
+    </VerticalStackLayout>
+
+</ContentPage>

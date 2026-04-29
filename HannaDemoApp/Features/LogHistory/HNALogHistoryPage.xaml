@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="HannaDemoApp.Features.LogHistory.HNALogHistoryPage"
+             Title="Log History">
+
+    <!-- ================= TOOLBAR ================= -->
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="{Binding SelectModeButtonText}"
+                     Command="{Binding ToggleSelectionModeCommand}"/>
+    </ContentPage.ToolbarItems>
+
+    <!-- ================= ROOT ================= -->
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- ================= LOADING ================= -->
+        <VerticalStackLayout Grid.Row="0"
+                             IsVisible="{Binding IsLoading}"
+                             HorizontalOptions="Center"
+                             Margin="0,40,0,0">
+
+            <ActivityIndicator IsRunning="True"
+                               HeightRequest="30"
+                               WidthRequest="30"/>
+
+            <Label Text="Loading logs..."
+                   FontSize="14"
+                   Opacity="0.6"
+                   HorizontalTextAlignment="Center"/>
+        </VerticalStackLayout>
+
+        <!-- ================= LIST ================= -->
+        <CollectionView Grid.Row="1"
+                        ItemsSource="{Binding LogGroups}"
+                        IsGrouped="True"
+                        SelectionMode="None"
+                        IsVisible="{Binding HasLogs}"
+                        Margin="16,8">
+
+            <CollectionView.GroupHeaderTemplate>
+                <DataTemplate>
+                    <Label Text="{Binding SectionName}"
+                           FontAttributes="Bold"
+                           FontSize="14"
+                           Margin="4,12,4,4"
+                           Opacity="0.6"/>
+                </DataTemplate>
+            </CollectionView.GroupHeaderTemplate>
+
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical"
+                                   ItemSpacing="12"/>
+            </CollectionView.ItemsLayout>
+
+            <!-- ================= ITEM ================= -->
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+
+                    <Border Padding="14"
+                            StrokeShape="RoundRectangle 16"
+                            StrokeThickness="1"
+                            BackgroundColor="{AppThemeBinding Light=White, Dark=#1E1E1E}">
+
+                        <!-- Selection highlight -->
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding IsSelected}"
+                                         Value="True">
+                                <Setter Property="BackgroundColor"
+                                        Value="#E3F2FD"/>
+                            </DataTrigger>
+                        </Border.Triggers>
+
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.TapItemCommand}"
+                                CommandParameter="{Binding .}"/>
+                        </Border.GestureRecognizers>
+
+                        <Grid ColumnDefinitions="Auto,*,Auto"
+                              RowDefinitions="Auto,Auto,Auto"
+                              RowSpacing="6">
+
+                            <!-- Checkbox -->
+                            <CheckBox Grid.Column="0"
+                                      Grid.RowSpan="3"
+                                      IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                      IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.IsSelectionMode}"
+                                      VerticalOptions="Center"
+                                      Margin="0,0,8,0"/>
+
+                            <!-- Title -->
+                            <Label Grid.Column="1"
+                                   Text="{Binding File.DeviceName}"
+                                   FontAttributes="Bold"
+                                   FontSize="16"/>
+
+                            <!-- Start -->
+                            <Label Grid.Row="1"
+                                   Grid.Column="1"
+                                   Text="{Binding File.StartDateText}"
+                                   FontSize="12"
+                                   Opacity="0.7"/>
+
+                            <!-- End -->
+                            <Label Grid.Row="2"
+                                   Grid.Column="1"
+                                   Text="{Binding File.EndDateText}"
+                                   FontSize="12"
+                                   Opacity="0.7"/>
+
+                            <!-- Chevron -->
+                            <Label Grid.Column="2"
+                                   Grid.RowSpan="3"
+                                   Text="›"
+                                   FontSize="18"
+                                   VerticalOptions="Center"
+                                   IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.IsNormalMode}"/>
+
+                        </Grid>
+                    </Border>
+
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- ================= EMPTY ================= -->
+        <Label Grid.Row="1"
+               Text="{Binding PlaceholderText}"
+               IsVisible="{Binding HasNoLogs}"
+               HorizontalOptions="Center"
+               VerticalOptions="Center"
+               Opacity="0.6"/>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- ROW 2 — Bottom action bar (liquid-glass tabbar style)          -->
+        <!-- Floating translucent pill that reuses the hidden tab bar space  -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="2"
+              IsVisible="{Binding IsSelectionMode}"
+              BackgroundColor="Transparent"
+              HeightRequest="{OnPlatform iOS='83', Default='68'}"
+              Padding="{OnPlatform iOS='14,6,14,8', Default='14,6,14,10'}">
+
+            <Border Padding="18,12"
+                    StrokeThickness="1"
+                    BackgroundColor="{AppThemeBinding Light=#D9FFFFFF, Dark=#C61C1C1E}"
+                    Stroke="{AppThemeBinding Light=#99FFFFFF, Dark=#4DFFFFFF}"
+                    StrokeShape="RoundRectangle 28"
+                    VerticalOptions="End"
+                    Shadow="{OnPlatform iOS='0,10,30,#22000000', Android='0,6,20,#22000000'}">
+
+                <Grid ColumnDefinitions="Auto,*,Auto"
+                      ColumnSpacing="16"
+                      MinimumHeightRequest="54">
+
+                    <!-- Select All / Deselect All action -->
+                    <Label Grid.Column="0"
+                           Text="{Binding SelectAllText}"
+                           FontSize="16"
+                           VerticalTextAlignment="Center"
+                           TextColor="{AppThemeBinding Light=#007AFF, Dark=#0A84FF}"
+                           VerticalOptions="Center">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectAllCommand}"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+
+                    <!-- Selected count -->
+                    <Label Grid.Column="1"
+                           Text="{Binding SelectionCountText}"
+                           FontSize="17"
+                           FontAttributes="Bold"
+                           HorizontalTextAlignment="Center"
+                           VerticalTextAlignment="Center"
+                           LineBreakMode="TailTruncation"
+                           TextColor="{AppThemeBinding Light=#111111, Dark=#FFFFFF}"
+                           VerticalOptions="Center"/>
+
+                    <!-- Share + Delete cluster -->
+                    <HorizontalStackLayout Grid.Column="2"
+                                           Spacing="10"
+                                           HorizontalOptions="End"
+                                           VerticalOptions="Center">
+
+                        <Border HeightRequest="42"
+                                WidthRequest="42"
+                                StrokeThickness="1"
+                                Stroke="{AppThemeBinding Light=#80FFFFFF, Dark=#33FFFFFF}"
+                                BackgroundColor="{AppThemeBinding Light=#B3F5F5F7, Dark=#662C2C2E}"
+                                StrokeShape="RoundRectangle 21"
+                                VerticalOptions="Center">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding HasSelection}"
+                                             Value="False">
+                                    <Setter Property="Opacity"
+                                            Value="0.45"/>
+                                </DataTrigger>
+                            </Border.Triggers>
+
+                            <ImageButton Source="share_icon.png"
+                                         Command="{Binding ShareSelectedCommand}"
+                                         IsEnabled="{Binding HasSelection}"
+                                         BackgroundColor="Transparent"
+                                         Padding="10"
+                                         Aspect="AspectFit"
+                                         HeightRequest="42"
+                                         WidthRequest="42"
+                                         VerticalOptions="Center"
+                                         HorizontalOptions="Center"/>
+                        </Border>
+
+                        <Border HeightRequest="42"
+                                WidthRequest="42"
+                                StrokeThickness="1"
+                                Stroke="{AppThemeBinding Light=#80FFFFFF, Dark=#33FFFFFF}"
+                                BackgroundColor="{AppThemeBinding Light=#B3F5F5F7, Dark=#662C2C2E}"
+                                StrokeShape="RoundRectangle 21"
+                                VerticalOptions="Center">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding HasSelection}"
+                                             Value="False">
+                                    <Setter Property="Opacity"
+                                            Value="0.45"/>
+                                </DataTrigger>
+                            </Border.Triggers>
+
+                            <ImageButton Source="delete_icon.png"
+                                         Command="{Binding DeleteSelectedCommand}"
+                                         IsEnabled="{Binding HasSelection}"
+                                         BackgroundColor="Transparent"
+                                         Padding="10"
+                                         Aspect="AspectFit"
+                                         HeightRequest="42"
+                                         WidthRequest="42"
+                                         VerticalOptions="Center"
+                                         HorizontalOptions="Center"/>
+                        </Border>
+
+                    </HorizontalStackLayout>
+
+                </Grid>
+            </Border>
+
+        </Grid>
+
+    </Grid>
+
+</ContentPage>

@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "MAUI iPhone Debug",
+            "type": "maui",
+            "request": "launch",
+            "mauiTarget": "ios",
+            "mauiDeviceId": "Prabus-iPhone-Wireless"
+        }
+    ]
+}

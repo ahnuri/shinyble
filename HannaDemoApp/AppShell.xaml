@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="HannaDemoApp.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:landing="clr-namespace:HannaDemoApp.Features.Landing"
+    xmlns:device="clr-namespace:HannaDemoApp.Features.Device"
+    xmlns:logHistory="clr-namespace:HannaDemoApp.Features.LogHistory"
+    xmlns:userSettings="clr-namespace:HannaDemoApp.Features.UserSettings"
+    Title="Hanna Lab">
+
+    <!-- 🔹 Bottom Tab Navigation -->
+
+
+    <ShellContent
+        Icon="home_icon.png"
+        Title="Home"
+        ContentTemplate="{DataTemplate landing:HNALandingPage}"
+        Route="Landing"/>
+
+    <ShellContent
+        Icon="halo_icon.png"
+        Title="Devices"
+        ContentTemplate="{DataTemplate device:HNADevicePage}"
+        Route="Devices"/>
+
+    <ShellContent
+        Icon="log_history_icon.png"
+        Title="Log History"
+        ContentTemplate="{DataTemplate logHistory:HNALogHistoryPage}"
+        Route="LogHistory"/>
+
+
+
+    <!-- 🔹 Secondary menu (Settings / About) -->
+    <FlyoutItem Title="User Settings"
+            Icon="user_profile_icon.png">
+        <ShellContent
+            Title="User Settings"
+            ContentTemplate="{DataTemplate userSettings:HNAUserSettingsPage}"
+            Route="UserSettings"/>
+    </FlyoutItem>
+
+</Shell>

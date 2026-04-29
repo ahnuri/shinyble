@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
+
+    <!-- MAUI default palette (referenced by Styles.xaml control defaults) -->
+    <Color x:Key="Primary">#512BD4</Color>
+    <Color x:Key="PrimaryDark">#ac99ea</Color>
+    <Color x:Key="PrimaryDarkText">#242424</Color>
+    <Color x:Key="Secondary">#DFD8F7</Color>
+    <Color x:Key="SecondaryDarkText">#9880e5</Color>
+    <Color x:Key="Tertiary">#2B0B98</Color>
+
+    <Color x:Key="White">White</Color>
+    <Color x:Key="Black">Black</Color>
+    <Color x:Key="Magenta">#D600AA</Color>
+    <Color x:Key="MidnightBlue">#190649</Color>
+    <Color x:Key="OffBlack">#1f1f1f</Color>
+
+    <Color x:Key="Gray100">#E1E1E1</Color>
+    <Color x:Key="Gray200">#C8C8C8</Color>
+    <Color x:Key="Gray300">#ACACAC</Color>
+    <Color x:Key="Gray400">#919191</Color>
+    <Color x:Key="Gray500">#6E6E6E</Color>
+    <Color x:Key="Gray600">#404040</Color>
+    <Color x:Key="Gray900">#212121</Color>
+    <Color x:Key="Gray950">#141414</Color>
+
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
+    <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
+    <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource Tertiary}"/>
+    <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource White}"/>
+    <SolidColorBrush x:Key="BlackBrush" Color="{StaticResource Black}"/>
+
+    <SolidColorBrush x:Key="Gray100Brush" Color="{StaticResource Gray100}"/>
+    <SolidColorBrush x:Key="Gray200Brush" Color="{StaticResource Gray200}"/>
+    <SolidColorBrush x:Key="Gray300Brush" Color="{StaticResource Gray300}"/>
+    <SolidColorBrush x:Key="Gray400Brush" Color="{StaticResource Gray400}"/>
+    <SolidColorBrush x:Key="Gray500Brush" Color="{StaticResource Gray500}"/>
+    <SolidColorBrush x:Key="Gray600Brush" Color="{StaticResource Gray600}"/>
+    <SolidColorBrush x:Key="Gray900Brush" Color="{StaticResource Gray900}"/>
+    <SolidColorBrush x:Key="Gray950Brush" Color="{StaticResource Gray950}"/>
+
+    <!-- ═══════════════════════════════════════════════════════
+         Hanna palette — built on iOS system color values
+         
+         iOS system reference:
+           Light systemBackground       #FFFFFF
+           Light secondarySystemBg      #F2F2F7
+           Light tertiarySystemBg       #FFFFFF
+           Dark  systemBackground       #000000
+           Dark  secondarySystemBg      #1C1C1E
+           Dark  tertiarySystemBg       #2C2C2E
+           Label (primary text)  L:#000000  D:#FFFFFF
+           secondaryLabel        L:#636366  D:#8E8E93
+           tertiaryLabel         L:#C7C7CC  D:#48484A
+           opaqueSeparator       L:#C6C6C8  D:#38383A
+         ═══════════════════════════════════════════════════════ -->
+
+    <!-- Brand / interactive — Hanna teal kept as the app tint -->
+    <Color x:Key="HannaBrandPrimary">#006CB7</Color>
+    <Color x:Key="HannaBrandPrimaryDark">#006CB7</Color>
+    <Color x:Key="HannaBrandSecondary">#006CB7</Color>
+    <Color x:Key="HannaBrandSecondaryDark">#006CB7</Color>
+
+    <!-- Page backgrounds — iOS systemGroupedBackground -->
+    <Color x:Key="HannaPageBg">#F2F2F7</Color>
+    <Color x:Key="HannaPageBgDark">#000000</Color>
+
+    <!-- Card backgrounds — iOS secondarySystemGroupedBackground -->
+    <Color x:Key="HannaCardBg">#FFFFFF</Color>
+    <Color x:Key="HannaCardBgDark">#1C1C1E</Color>
+
+    <!-- Connected device card — subtle green tint on iOS white/dark surface -->
+    <Color x:Key="HannaCardGreen">#F0FAF3</Color>
+    <Color x:Key="HannaCardGreenDark">#1C2C21</Color>
+
+    <!-- Detail header card — very light mint on iOS surface -->
+    <Color x:Key="HannaCardMint">#F5FAF8</Color>
+    <Color x:Key="HannaCardMintDark">#1C2826</Color>
+
+    <!-- Section / inner area backgrounds — iOS tertiarySystemGroupedBackground -->
+    <Color x:Key="HannaSectionBg">#F2F2F7</Color>
+    <Color x:Key="HannaSectionBgDark">#2C2C2E</Color>
+
+    <!-- Table column header background -->
+    <Color x:Key="HannaTableHeaderBg">#F2F2F7</Color>
+    <Color x:Key="HannaTableHeaderBgDark">#2C2C2E</Color>
+
+    <!-- Card border / separator — iOS opaqueSeparator -->
+    <Color x:Key="HannaCardBorder">#C6C6C8</Color>
+    <Color x:Key="HannaCardBorderDark">#38383A</Color>
+
+    <!-- Text — mapped directly to iOS label system colors -->
+    <Color x:Key="HannaTextPrimary">#000000</Color>
+    <Color x:Key="HannaTextPrimaryDark">#FFFFFF</Color>
+    <Color x:Key="HannaTextSecondary">#636366</Color>
+    <Color x:Key="HannaTextSecondaryDark">#8E8E93</Color>
+    <Color x:Key="HannaTextMuted">#8E8E93</Color>
+    <Color x:Key="HannaTextMutedDark">#636366</Color>
+    <Color x:Key="HannaTextChevron">#C7C7CC</Color>
+    <Color x:Key="HannaTextChevronDark">#48484A</Color>
+
+    <!-- Measurement response value — brand-tinted readable green -->
+    <Color x:Key="HannaTextResponse">#2C6B50</Color>
+    <Color x:Key="HannaTextResponseDark">#34C77A</Color>
+
+    <!-- Shell navigation bar — iOS uses white/near-white in light, #1C1C1E in dark -->
+    <Color x:Key="HannaNavBg">#F9F9F9</Color>
+    <Color x:Key="HannaNavBgDark">#1C1C1E</Color>
+
+    <!-- Nav bar title and button tint -->
+    <Color x:Key="HannaNavFg">#17313A</Color>
+    <Color x:Key="HannaNavFgDark">#FFFFFF</Color>
+
+    <!-- Tab bar background — iOS standard white / #1C1C1E -->
+    <Color x:Key="HannaTabBarBg">#F9F9F9</Color>
+    <Color x:Key="HannaTabBarBgDark">#1C1C1E</Color>
+
+    <!-- Tab bar selected tint — Hanna brand in light, slightly lighter in dark -->
+    <Color x:Key="HannaTabSelected">#17313A</Color>
+    <Color x:Key="HannaTabSelectedDark">#3A8FA8</Color>
+
+    <!-- Tab bar unselected — iOS secondaryLabel -->
+    <Color x:Key="HannaTabUnselected">#8E8E93</Color>
+    <Color x:Key="HannaTabUnselectedDark">#636366</Color>
+
+</ResourceDictionary>
