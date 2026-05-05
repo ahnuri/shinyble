@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="HannaDemoApp.Features.Device.MultiMeter.HNAMultiMeterConnectionDetails"
+    Title="MultiMeter">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="14">
+
+            <Label 
+                Text="{Binding DeviceDisplayName}" 
+                FontSize="20"
+                FontAttributes="Bold"/>
+
+            <Label 
+                Text="{Binding DeviceSubtitle}" 
+                FontSize="14"
+                TextColor="Gray"/>
+
+            <ActivityIndicator
+                IsRunning="{Binding IsLoadingDeviceInfo}"
+                IsVisible="{Binding IsLoadingDeviceInfo}"
+                HorizontalOptions="Start"/>
+
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Device info"
+                       FontSize="16"
+                       FontAttributes="Bold"/>
+
+                <Grid ColumnDefinitions="Auto,*"
+                      RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                      ColumnSpacing="12"
+                      RowSpacing="8">
+                    <Label Text="Model"/>
+                    <Label Grid.Column="1"
+                           Text="{Binding Device.DeviceInfo.MeterModel}"/>
+
+                    <Label Grid.Row="1"
+                           Text="Meter ID"/>
+                    <Label Grid.Row="1"
+                           Grid.Column="1"
+                           Text="{Binding Device.DeviceInfo.MeterId}"/>
+
+                    <Label Grid.Row="2"
+                           Text="Meter FW"/>
+                    <Label Grid.Row="2"
+                           Grid.Column="1"
+                           Text="{Binding Device.DeviceInfo.MeterFirmwareVersion}"/>
+
+                    <Label Grid.Row="3"
+                           Text="Serial"/>
+                    <Label Grid.Row="3"
+                           Grid.Column="1"
+                           Text="{Binding Device.DeviceInfo.SerialNumber}"/>
+
+                    <Label Grid.Row="4"
+                           Text="Raw"/>
+                    <Label Grid.Row="4"
+                           Grid.Column="1"
+                           Text="{Binding Device.DeviceInfo.RawDeviceInfo}"
+                           LineBreakMode="WordWrap"/>
+                </Grid>
+            </VerticalStackLayout>
+
+            <Button Text="Refresh device info"
+                    Command="{Binding RefreshDeviceInfoCommand}"
+                    IsEnabled="{Binding IsNotLoadingDeviceInfo}"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

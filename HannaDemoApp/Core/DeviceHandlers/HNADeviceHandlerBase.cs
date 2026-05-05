@@ -6,6 +6,12 @@ namespace HannaDemoApp.Core.DeviceHandlers;
 // Subclasses override only what differs for their product family.
 public abstract class HNADeviceHandlerBase : IHNADeviceHandler
 {
+    public virtual bool ShouldAutoStartMeasurementStream => false;
+
+    public virtual bool ShouldQueueDeviceInfoInMeasurementHistory => false;
+
+    public virtual bool UsesTimedMeasurementBatchPersistence => false;
+
     public virtual void ApplyDeviceInfo(HNABleDeviceModel deviceItem, string response)
     {
         var values = response.Split(',', StringSplitOptions.TrimEntries);
@@ -14,11 +20,21 @@ public abstract class HNADeviceHandlerBase : IHNADeviceHandler
             return;
         }
 
+        var deviceInfo = deviceItem.DeviceInfo;
+        deviceInfo.RawDeviceInfo = response;
+        deviceInfo.RecallCount = string.Empty;
+        deviceInfo.Language = string.Empty;
+        deviceInfo.LanguageVersion = string.Empty;
+        deviceInfo.CalibrationDate = string.Empty;
+
         deviceItem.MeterModel = values.Length > 1 ? values[1] : string.Empty;
-        deviceItem.UserSetName = values.Length > 2 ? values[2] : deviceItem.Name;
+        deviceItem.MeterId = values.Length > 2 ? values[2] : string.Empty;
         deviceItem.MeterFirmwareVersion = FindValueAfterLabel(values, "FW");
         deviceItem.BleFirmwareVersion = FindValueAfterLabel(values, "nRF FW");
         deviceItem.SerialNumber = FindValueAfterLabel(values, "SN");
+
+        ApplyPhotometerInfo(deviceInfo, values);
+        ApplyHaloInfo(deviceInfo, values);
     }
 
     public virtual bool TryHandleResponse(HNABleDeviceModel deviceItem, string response)
@@ -71,6 +87,46 @@ public abstract class HNADeviceHandlerBase : IHNADeviceHandler
         }
 
         return string.Empty;
+    }
+
+    protected static int FindLabelIndex(IReadOnlyList<string> values, string label)
+    {
+        for (var i = 0; i < values.Count; i++)
+        {
+            if (string.Equals(values[i], label, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static void ApplyPhotometerInfo(HNADeviceInfoModel deviceInfo, IReadOnlyList<string> values)
+    {
+        var recallIndex = FindLabelIndex(values, "RCL");
+        if (recallIndex < 0)
+        {
+            return;
+        }
+
+        deviceInfo.RecallCount = recallIndex + 1 < values.Count ? values[recallIndex + 1] : string.Empty;
+        deviceInfo.Language = recallIndex + 2 < values.Count ? values[recallIndex + 2] : string.Empty;
+        deviceInfo.LanguageVersion = recallIndex + 3 < values.Count ? values[recallIndex + 3] : string.Empty;
+    }
+
+    private static void ApplyHaloInfo(HNADeviceInfoModel deviceInfo, IReadOnlyList<string> values)
+    {
+        if (!string.IsNullOrWhiteSpace(deviceInfo.RecallCount))
+        {
+            return;
+        }
+
+        var serialIndex = FindLabelIndex(values, "SN");
+        if (serialIndex >= 0 && serialIndex + 2 < values.Count)
+        {
+            deviceInfo.CalibrationDate = values[serialIndex + 2];
+        }
     }
 
     protected static bool TryApplyBatteryStatus(HNABleDeviceModel deviceItem, string response)

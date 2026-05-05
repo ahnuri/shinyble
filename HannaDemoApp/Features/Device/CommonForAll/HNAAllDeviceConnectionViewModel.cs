@@ -4,6 +4,7 @@ using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HannaDemoApp.Core.DeviceHandlers;
+using HannaDemoApp.Core.Enums;
 using HannaDemoApp.Models;
 using HannaDemoApp.Services.Ble;
 using HannaDemoApp.Services.Ble.Permission;
@@ -13,7 +14,7 @@ using HannaDemoApp.Services.Navigation;
 namespace HannaDemoApp.Features.Device;
 
 // Coordinates BLE scan, connect, disconnect, and command actions for the devices page.
-public partial class HNADeviceViewModel : ObservableObject, IDisposable
+public partial class HNAAllDeviceConnectionViewModel : ObservableObject, IDisposable
 {
     private readonly IHNABleService _bleService;
     private readonly IHNADialogService _dialogService;
@@ -26,7 +27,7 @@ public partial class HNADeviceViewModel : ObservableObject, IDisposable
     private bool isBusy;
 
 
-    public HNADeviceViewModel(
+    public HNAAllDeviceConnectionViewModel(
         IHNABleService bleService,
         IBlePermissionService permissionService,
         IHNANavigationService navigationService,
@@ -143,6 +144,11 @@ public partial class HNADeviceViewModel : ObservableObject, IDisposable
         {
             await _bleService.ConnectAsync(device);
             RaiseUiStateChanged();
+
+            if (device.IsConnected && device.HasDeviceInfo)
+            {
+                await NavigateToDeviceDetailsAsync(device);
+            }
         }
 
         finally
@@ -219,14 +225,28 @@ public partial class HNADeviceViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void MeasureLiveDetails(HNABleDeviceModel? device)
+    private async Task MeasureLiveDetails(HNABleDeviceModel? device)
     {
-        if (device == null || !device.UsesLiveMeasurementUi)
+        if (device == null)
         {
             return;
         }
 
-        _ = _navigationService.NavigateToLiveDetailsAsync(device.Id);
+        await NavigateToDeviceDetailsAsync(device);
+    }
+
+    private Task NavigateToDeviceDetailsAsync(HNABleDeviceModel device)
+    {
+        return device.DetailWorkflow switch
+        {
+            HNADeviceDetailWorkflow.LiveReadings =>
+                _navigationService.NavigateToLiveDetailsAsync(device.Id),
+            HNADeviceDetailWorkflow.PhotometerDetails =>
+                _navigationService.NavigateToConnectedPhotometerDetailsAsync(device.Id, device.DisplayName),
+            HNADeviceDetailWorkflow.MultiMeterDetails =>
+                _navigationService.NavigateToConnectedMultiMeterDetailsAsync(device.Id, device.DisplayName),
+            _ => Task.CompletedTask
+        };
     }
 
 

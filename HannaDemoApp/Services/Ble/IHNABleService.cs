@@ -47,6 +47,11 @@ public interface IHNABleService : IDisposable
     // ===================== BACKGROUND RESUME =====================================================
     Task ResumeLiveUpdatesAsync(CancellationToken cancellationToken = default); // Resume streaming after app foreground
 
+    /// <summary>
+    /// Flushes Halo DB batches from the off-UI persistence buffer. Safe to call from any thread (e.g. Android <c>OnPause</c>).
+    /// </summary>
+    void DrainHaloPersistenceBatches();
+
     // ===================== EVENTS & PROPERTY CHANGES =====================================================
     event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;   // Required for ObservableObject binding
 }

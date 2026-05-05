@@ -8,6 +8,8 @@ public interface IHNANavigationService
     Task NavigateToLogHistoryAsync(string deviceId);
 
     Task NavigateToLiveDetailsAsync(string deviceId);
+    Task NavigateToConnectedPhotometerDetailsAsync(string deviceId, string deviceName);
+    Task NavigateToConnectedMultiMeterDetailsAsync(string deviceId, string deviceName);
     Task NavigateToLogDetailAsync(int logFileId);
 
 }

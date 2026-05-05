@@ -7,7 +7,8 @@ public static class HNAAppConstants
     public const int DeviceInfoTimeoutSeconds = 6;
     public const int BondValidationTimeoutSeconds = 35;
     public const int BondValidationAttemptTimeoutSeconds = 1;
-    public const int MaxMeasurementLogEntries = 3600; ///Auto save after 1 hour of logging at 1 entry per second.
+    /// <summary>Auto-save batch size (e.g. 1 Hz × 3600 s).</summary>
+    public const int MaxMeasurementLogEntries = 3600;
 
     public const string NordicUartServiceUuid = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
     public const string NordicUartWriteCharacteristicUuid = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
@@ -27,7 +28,9 @@ public static class HNAAppConstants
         public const string Devices = "Devices";
         public const string LogHistory = "LogHistory";
         public const string LiveDetails = "LiveDetails";
+        public const string ConnectedPhotometerDetails = "ConnectedPhotometerDetails";
+        public const string ConnectedMultiMeterDetails = "ConnectedMultiMeterDetails";
         public const string LogDetail = "LogDetail";
-        public const string UserSettings = "User Settings";
+        public const string UserSettings = "UserSettings";
     }
 }

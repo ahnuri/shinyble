@@ -3,9 +3,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using HannaDemoApp.Models;
 using HannaDemoApp.Services.Ble;
 
-namespace HannaDemoApp.Features.Device.LiveMeasure;
+namespace HannaDemoApp.Features.Device.Halo;
 
-public partial class LiveDetailsViewModel : ObservableObject
+public partial class HNAHaloMeasurePageViewModel : ObservableObject
 {
     private readonly IHNABleService _bleService;
     private HNABleDeviceModel? _device;
@@ -37,7 +37,7 @@ public partial class LiveDetailsViewModel : ObservableObject
     [ObservableProperty]
     private string emptyStateText = "Connect a Halo device and tap 'View Live' again.";
 
-    public LiveDetailsViewModel(IHNABleService bleService)
+    public HNAHaloMeasurePageViewModel(IHNABleService bleService)
     {
         _bleService = bleService;
     }

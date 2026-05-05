@@ -1,18 +1,19 @@
 using HannaDemoApp.Core.DeviceHandlers;
 using HannaDemoApp.Features.Device;
-using HannaDemoApp.Features.Device.LiveMeasure;
+using HannaDemoApp.Features.Device.Halo;
+using HannaDemoApp.Features.Device.MultiMeter;
 using HannaDemoApp.Features.Landing;
-using HannaDemoApp.Features.LogDetail;
 using HannaDemoApp.Features.LogHistory;
-using HannaDemoApp.Services.Background;
+using HannaDemoApp.Features.Photometer;
 using HannaDemoApp.Features.UserSettings;
+using HannaDemoApp.Services.Background;
 using HannaDemoApp.Services.Ble;
+using HannaDemoApp.Services.Ble.Permission;
 using HannaDemoApp.Services.Database;
 using HannaDemoApp.Services.Dialog;
 using HannaDemoApp.Services.Navigation;
 using Microsoft.Extensions.Logging;
 using Shiny;
-using HannaDemoApp.Services.Ble.Permission;
 
 namespace HannaDemoApp;
 
@@ -24,10 +25,7 @@ public static class MauiProgram
 {
 	public static MauiApp CreateMauiApp()
 	{
-
-
 		// Verbose global exception handling for debugging purposes
-
 		AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
 		{
 			System.Diagnostics.Debug.WriteLine($"[CRASH] {e.ExceptionObject}");
@@ -72,24 +70,28 @@ public static class MauiProgram
 #if ANDROID
 		builder.Services.AddSingleton<IHNABackgroundService, HNAAndroidBackgroundService>();
 #else
-			builder.Services.AddSingleton<IHNABackgroundService, HNANoOpBackgroundService>();
+		builder.Services.AddSingleton<IHNABackgroundService, HNANoOpBackgroundService>();
 #endif
 		builder.Services.AddSingleton<IHNABleService, HNABleService>();
 
 		// Features - ViewModels
 		builder.Services.AddTransient<HNALandingViewModel>();
-		builder.Services.AddTransient<HNADeviceViewModel>();
-		builder.Services.AddTransient<LiveDetailsViewModel>();
+		builder.Services.AddTransient<HNAAllDeviceConnectionViewModel>();
+		builder.Services.AddTransient<HNAHaloMeasurePageViewModel>();
 		builder.Services.AddTransient<HNALogHistoryViewModel>();
 		builder.Services.AddTransient<HNALogDetailViewModel>();
+		builder.Services.AddTransient<HNAPMConnectionDetailsViewModel>();
+		builder.Services.AddTransient<HNAMultiMeterConnectionDetailsViewModel>();
 
 		// Features - Pages
 		builder.Services.AddTransient<HNALandingPage>();
-		builder.Services.AddTransient<HNADevicePage>();
-		builder.Services.AddTransient<LiveDetailsPage>();
+		builder.Services.AddTransient<HNAAllDeviceConnectionPage>();
+		builder.Services.AddTransient<HNAHaloMeasurePage>();
 		builder.Services.AddTransient<HNALogHistoryPage>();
 		builder.Services.AddTransient<HNALogDetailPage>();
 		builder.Services.AddTransient<HNAUserSettingsPage>();
+		builder.Services.AddTransient<HNAPMConnectionDetails>();
+		builder.Services.AddTransient<HNAMultiMeterConnectionDetails>();
 
 		builder.Services.AddSingleton<AppShell>();
 

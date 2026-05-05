@@ -21,7 +21,7 @@
     <ShellContent
         Icon="halo_icon.png"
         Title="Devices"
-        ContentTemplate="{DataTemplate device:HNADevicePage}"
+        ContentTemplate="{DataTemplate device:HNAAllDeviceConnectionPage}"
         Route="Devices"/>
 
     <ShellContent

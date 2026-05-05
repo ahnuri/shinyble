@@ -12,7 +12,7 @@ public sealed class HNAProductMatchingService : IHNAProductMatchingService
     {
         { HNAProductId.HI9810, ["8f070100"] },
         { HNAProductId.HI98494, ["6e400001b5a3f393e0a9e50e24dcca9e"] },
-        { HNAProductId.HI97105, ["8f070200"] },
+        { HNAProductId.HI97115, ["8f070200"] },
         { HNAProductId.HI98594, ["8f070400"] }
     };
 

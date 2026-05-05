@@ -12,6 +12,7 @@ public sealed class HNADeviceHandlerRegistry
     {
         Register(HNAProductId.HI9810, new HNAHaloDeviceHandler());
         Register(HNAProductId.HI98494, new HNAMultiMeterDeviceHandler());
+        Register(HNAProductId.HI97115, new HNAPhotometerDeviceHandler());
         Register(HNAProductId.HI97105, new HNAPhotometerDeviceHandler());
         Register(HNAProductId.HI98594, new HNAMultiMeterDeviceHandler());
     }

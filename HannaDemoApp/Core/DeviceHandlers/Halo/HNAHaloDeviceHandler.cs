@@ -6,6 +6,10 @@ namespace HannaDemoApp.Core.DeviceHandlers;
 // Uses incremental timestamps for measurement responses.
 public sealed class HNAHaloDeviceHandler : HNADeviceHandlerBase
 {
+    public override bool ShouldAutoStartMeasurementStream => true;
+
+    public override bool UsesTimedMeasurementBatchPersistence => true;
+
     private static readonly IReadOnlyList<string> Commands =
     [
         "set setup start",
@@ -67,7 +71,7 @@ public sealed class HNAHaloDeviceHandler : HNADeviceHandlerBase
             return false;
         }
 
-        deviceItem.QueueMeasurementLog(deviceItem.GetNextIncrementalMeasurementTime(), response);
+        deviceItem.QueueHaloLiveMeasurement(deviceItem.GetNextIncrementalMeasurementTime(), response);
         return true;
     }
 

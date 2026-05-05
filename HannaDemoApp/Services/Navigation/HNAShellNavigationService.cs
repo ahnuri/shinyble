@@ -1,5 +1,4 @@
 using HannaDemoApp.Core.Constants;
-using HannaDemoApp.Features.Device;
 
 namespace HannaDemoApp.Services.Navigation;
 
@@ -28,6 +27,26 @@ public class HNAShellNavigationService : IHNANavigationService
     {
         return MainThread.InvokeOnMainThreadAsync(
             () => Shell.Current.GoToAsync($"{HNAAppConstants.Routes.LiveDetails}?deviceId={deviceId}"));
+    }
+
+    public Task NavigateToConnectedPhotometerDetailsAsync(string deviceId, string deviceName)
+    {
+        var escapedDeviceId = Uri.EscapeDataString(deviceId);
+        var escapedDeviceName = Uri.EscapeDataString(deviceName);
+
+        return MainThread.InvokeOnMainThreadAsync(
+            () => Shell.Current.GoToAsync(
+                $"{HNAAppConstants.Routes.ConnectedPhotometerDetails}?deviceId={escapedDeviceId}&deviceName={escapedDeviceName}"));
+    }
+
+    public Task NavigateToConnectedMultiMeterDetailsAsync(string deviceId, string deviceName)
+    {
+        var escapedDeviceId = Uri.EscapeDataString(deviceId);
+        var escapedDeviceName = Uri.EscapeDataString(deviceName);
+
+        return MainThread.InvokeOnMainThreadAsync(
+            () => Shell.Current.GoToAsync(
+                $"{HNAAppConstants.Routes.ConnectedMultiMeterDetails}?deviceId={escapedDeviceId}&deviceName={escapedDeviceName}"));
     }
 
     public Task NavigateToLogDetailAsync(int logFileId)

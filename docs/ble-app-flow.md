@@ -148,6 +148,7 @@ Why this matters:
 - pages and view models are transient because they are UI objects.
 
 File:
+
 - [MauiProgram.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HannaDemoApp/MauiProgram.cs)
 
 `App.xaml.cs` creates the main window and uses `AppShell` as the root UI container:
@@ -160,6 +161,7 @@ protected override Window CreateWindow(IActivationState? activationState)
 ```
 
 File:
+
 - [App.xaml.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HannaDemoApp/App.xaml.cs)
 
 ## 2. Shell And Navigation
@@ -185,6 +187,7 @@ What this means:
 - `"ble"` is the route name used for navigation
 
 File:
+
 - [AppShell.xaml](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HannaDemoApp/AppShell.xaml)
 
 Navigation is wrapped in `INavigationService`:
@@ -220,6 +223,7 @@ Beginner explanation of this method:
 - `MainThread.InvokeOnMainThreadAsync(...)` makes sure the navigation happens on the UI thread
 
 Files:
+
 - [INavigationService.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HNASourceCode/HNAServices/INavigationService.cs)
 - [ShellNavigationService.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HNASourceCode/HNAServices/ShellNavigationService.cs)
 
@@ -241,6 +245,7 @@ How to read this:
 - no click handler is needed in code-behind
 
 Files:
+
 - [MainPage.xaml](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HannaDemoApp/MainPage.xaml)
 - [MainPage.xaml.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HannaDemoApp/MainPage.xaml.cs)
 
@@ -277,6 +282,7 @@ Why this is useful:
 - the page remains very small and easy to understand
 
 File:
+
 - [LandingPageViewModel.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HNASourceCode/HNAViewModels/LandingPageViewModel.cs)
 
 ## 4. BLE Devices Page
@@ -312,6 +318,7 @@ public BleDevicesPage(BleDevicesPageViewModel viewModel)
 ```
 
 Files:
+
 - [BleDevicesPage.xaml](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HNASourceCode/HNAPages/BleDevicesPage.xaml)
 - [BleDevicesPage.xaml.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HNASourceCode/HNAPages/BleDevicesPage.xaml.cs)
 
@@ -370,6 +377,7 @@ Beginner explanation:
 - otherwise it starts scanning
 
 File:
+
 - [BleDevicesPageViewModel.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HNASourceCode/HNAViewModels/BleDevicesPageViewModel.cs)
 
 ## 6. The Main BLE Service
@@ -389,6 +397,7 @@ It is responsible for:
 If you want to understand the real behavior of the app, this is the most important file.
 
 File:
+
 - [HNABLEServiceManager.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HNASourceCode/HNAServices/HNABLEServiceManager.cs)
 
 ## 7. Product Matching
@@ -587,6 +596,7 @@ Why this class exists:
 - this model stores UI state such as name, RSSI, connection state, latest values, and measurement logs
 
 File:
+
 - [BleDeviceItem.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HNASourceCode/HNAModels/BleDeviceItem.cs)
 
 ## 12. Connection Flow
@@ -692,6 +702,7 @@ Why this pattern is good:
 - other platforms can safely ignore this behavior
 
 Files:
+
 - [IBackgroundService.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HNASourceCode/HNAServices/IBackgroundService.cs)
 - [BackgroundService.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HannaDemoApp/Platforms/Android/BackgroundService.cs)
 - [BleForegroundService.cs](/Users/praburajendran/Desktop/My%20Workspace/hybridapp/HannaDemoApp/HannaDemoApp/Platforms/Android/BleForegroundService.cs)
@@ -886,3 +897,4 @@ If you want to learn this app quickly, read files in this order:
 - `INotifyPropertyChanged` keeps labels and state in sync with code changes.
 - `ObservableCollection<T>` keeps list UI in sync with added or removed items.
 - most page code-behind is intentionally small because the app follows an MVVM-style structure.
+

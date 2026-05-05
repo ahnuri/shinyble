@@ -1,4 +1,4 @@
-namespace HannaDemoApp.Features.LogDetail;
+namespace HannaDemoApp.Features.LogHistory;
 
 [QueryProperty(nameof(LogFileId), "logFileId")]
 public partial class HNALogDetailPage : ContentPage

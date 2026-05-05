@@ -36,9 +36,8 @@ namespace HannaDemoApp.Services.Ble;
 //                   b) send "info" and wait for the "I,..." device-info response
 //                   c) start live measurements only for products that support it
 //
-//   5. STREAMING    Notifications come in via peripheral.NotifyCharacteristic() observable.
-//                   The subscription handler calls HandleIncomingResponse() → product handler
-//                   → QueueMeasurementLog → FlushPendingMeasurementLogs → UI.
+//   5. STREAMING    Notifications via peripheral.NotifyCharacteristic(). HandleIncomingResponse()
+//                   runs the product handler; Halo rows also drain to SQLite from the callback thread.
 //
 //   6. DISCONNECT   The WhenDisconnected() subscription or the connection monitor
 //                   triggers cleanup, session teardown, and foreground service stop.
@@ -46,8 +45,6 @@ namespace HannaDemoApp.Services.Ble;
 //   7. RESUME       ResumeLiveUpdatesAsync() flushes pending logs and re-sends
 //                   "set meas on" only to products that use the live stream.
 // =====================================================================================
-
-
 
 public partial class HNABleService : ObservableObject, IHNABleService
 {
@@ -216,9 +213,8 @@ public partial class HNABleService : ObservableObject, IHNABleService
             });
             _disconnectSubscriptions[device.Id] = disconnectSub;
 
-            // Initialize device with proper error handling (initialization errors are logged)
-            InitializeConnectedDeviceAsync(device, cancellationToken)
-                .SafeFireAndForget("Device initialization after connection");
+            // Wait for bond validation and device info before the UI chooses the next page.
+            await InitializeConnectedDeviceAsync(device, cancellationToken);
             _backgroundService?.StartService();
             StartConnectionMonitor();
         }
@@ -294,12 +290,16 @@ public partial class HNABleService : ObservableObject, IHNABleService
         await _resumeLock.WaitAsync(cancellationToken);
         try
         {
+            foreach (var connectedDevice in ConnectedDevices.ToList())
+            {
+                DrainHaloPersistenceBatchesForDevice(connectedDevice);
+            }
+
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
                 foreach (var connectedDevice in ConnectedDevices)
                 {
                     connectedDevice.FlushPendingMeasurementLogs();
-                    CheckAndSaveMeasurementBatchIfLimitReached(connectedDevice);
                 }
             });
 
@@ -320,7 +320,7 @@ public partial class HNABleService : ObservableObject, IHNABleService
                     continue;
                 }
 
-                if (ShouldAutoStartMeasurementStream(connectedDevice.ProductId))
+                if (ShouldAutoStartMeasurementStream(connectedDevice))
                 {
                     await RestartMeasurementStreamAsync(existingSession, cancellationToken);
                 }
@@ -435,6 +435,8 @@ public partial class HNABleService : ObservableObject, IHNABleService
         var connectedItem = GetKnownDevice(deviceId) ??
                             ConnectedDevices.FirstOrDefault(d => d.Id == deviceId);
         if (connectedItem == null) return;
+
+        PersistStreamingBatchOnDisconnect(connectedItem);
 
         connectedItem.IsLoadingDeviceInfo = false;
         connectedItem.IsConnecting = false;
@@ -603,12 +605,16 @@ public partial class HNABleService : ObservableObject, IHNABleService
 
             if (!string.IsNullOrWhiteSpace(result.InfoResponse))
             {
-                await MainThread.InvokeOnMainThreadAsync(() => ApplyDeviceInfo(deviceItem, result.InfoResponse));
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    ApplyDeviceInfo(deviceItem, result.InfoResponse);
+                    SyncProductIdFromMeterModel(deviceItem);
+                });
             }
 
             await MainThread.InvokeOnMainThreadAsync(() => deviceItem.IsLoadingDeviceInfo = false);
 
-            if (ShouldAutoStartMeasurementStream(deviceItem.ProductId))
+            if (ShouldAutoStartMeasurementStream(deviceItem))
             {
                 await StartMeasurementStreamAsync(session, cancellationToken);
                 StatusText = string.IsNullOrWhiteSpace(result.InfoResponse)
@@ -642,7 +648,7 @@ public partial class HNABleService : ObservableObject, IHNABleService
             cancellationToken.ThrowIfCancellationRequested();
             StatusText = $"Checking {deviceItem.Name} bonding... ({attempt}/{HNAAppConstants.BondValidationTimeoutSeconds})";
             var requestResult = await RequestDeviceInfoAsync(session, cancellationToken);
-            Console.WriteLine($"[BondValidation] attempt {attempt} Received any response: {requestResult.ReceivedAnyResponse}, Info response: {requestResult.InfoResponse}");
+            Debug.WriteLine($"[BondValidation] attempt {attempt} ReceivedAny={requestResult.ReceivedAnyResponse}, HasInfo={!string.IsNullOrEmpty(requestResult.InfoResponse)}");
             if (!string.IsNullOrWhiteSpace(requestResult.InfoResponse))
             {
                 return new BondValidationResult(true, requestResult.InfoResponse);
@@ -790,14 +796,10 @@ public partial class HNABleService : ObservableObject, IHNABleService
 
         if (response.StartsWith("I,", StringComparison.OrdinalIgnoreCase))
         {
-            if (ShouldShowAllResponsesInHistory(deviceItem.ProductId))
+            if (ShouldQueueDeviceInfoInMeasurementHistory(deviceItem))
             {
                 deviceItem.QueueMeasurementLog(DateTime.Now, response);
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    deviceItem.FlushPendingMeasurementLogs();
-                    CheckAndSaveMeasurementBatchIfLimitReached(deviceItem);
-                });
+                MainThread.BeginInvokeOnMainThread(() => deviceItem.FlushPendingMeasurementLogs());
             }
 
             session.PendingInfoResponse?.TrySetResult(response);
@@ -815,61 +817,140 @@ public partial class HNABleService : ObservableObject, IHNABleService
             return;
         }
 
-        MainThread.BeginInvokeOnMainThread(() =>
+        if (UsesTimedMeasurementBatchPersistence(deviceItem))
         {
-            deviceItem.FlushPendingMeasurementLogs();
-            CheckAndSaveMeasurementBatchIfLimitReached(deviceItem);
-        });
+            DrainHaloPersistenceBatchesForDevice(deviceItem);
+        }
+
+        MainThread.BeginInvokeOnMainThread(() => deviceItem.FlushPendingMeasurementLogs());
+    }
+
+    /// <inheritdoc />
+    public void DrainHaloPersistenceBatches()
+    {
+        foreach (var device in ConnectedDevices.ToList())
+        {
+            DrainHaloPersistenceBatchesForDevice(device);
+        }
     }
 
     /// <summary>
-    /// Checks if the device's measurement batch has reached the auto-save limit (3600 records).
-    /// If the limit is reached, saves the batch to the database and clears the batch for continued monitoring.
+    /// Writes 3600-record SQLite files from the Halo buffer on the calling thread (typically the BLE callback thread).
     /// </summary>
-    private void CheckAndSaveMeasurementBatchIfLimitReached(HNABleDeviceModel deviceItem)
+    private void DrainHaloPersistenceBatchesForDevice(HNABleDeviceModel deviceItem)
     {
-        var (batchLimitReached, batchData, batchStartTime, batchEndTime) = deviceItem.CheckIfBatchLimitReached();
+        if (!UsesTimedMeasurementBatchPersistence(deviceItem))
+        {
+            return;
+        }
 
-        if (!batchLimitReached || batchData.Count == 0)
+        var max = HNAAppConstants.MaxMeasurementLogEntries;
+        while (deviceItem.TryCopyFrontHaloPersistBatch(max, out var batch))
+        {
+            try
+            {
+                var batchStart = batch[0].RecordedAt;
+                var batchEnd = batch[^1].RecordedAt;
+                var fileName = $"{deviceItem.SerialNumber}_{batchStart:yyyyMMdd_HHmmss}";
+                _logRepository.SaveLogFile(
+                    deviceItem.Id,
+                    deviceItem.MeterModel,
+                    deviceItem.DisplayName,
+                    fileName,
+                    batchStart,
+                    batchEnd,
+                    batch);
+                deviceItem.RemoveFrontFromHaloPersistBuffer(max);
+
+                Debug.WriteLine(
+                    $"[HNABleService] Halo batch saved ({batch.Count} rows). Device: {deviceItem.DisplayName}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[HNABleService] Halo batch save failed: {ex.Message}");
+                return;
+            }
+        }
+    }
+
+    private void SaveHaloPersistRecords(HNABleDeviceModel deviceItem, List<HNAMeasurementLogModel> records, string fileNameSuffix)
+    {
+        if (records.Count == 0)
+        {
+            return;
+        }
+
+        var batchStart = records[0].RecordedAt;
+        var batchEnd = records[^1].RecordedAt;
+        var fileName = $"{deviceItem.SerialNumber}_{batchStart:yyyyMMdd_HHmmss}{fileNameSuffix}";
+        _logRepository.SaveLogFile(
+            deviceItem.Id,
+            deviceItem.MeterModel,
+            deviceItem.DisplayName,
+            fileName,
+            batchStart,
+            batchEnd,
+            records);
+    }
+
+    /// <summary>
+    /// On disconnect, drain full 3600-row DB batches then any remainder in the Halo persistence buffer.
+    /// </summary>
+    private void PersistStreamingBatchOnDisconnect(HNABleDeviceModel deviceItem)
+    {
+        if (!UsesTimedMeasurementBatchPersistence(deviceItem))
         {
             return;
         }
 
         try
         {
-            // Save the batch to the database
-            var fileName = $"{deviceItem.SerialNumber}_{batchStartTime:yyyyMMdd_HHmmss}";
-            _logRepository.SaveLogFile(
-                deviceItem.Id,
-                deviceItem.MeterModel,
-                deviceItem.DisplayName,
-                fileName,
-                batchStartTime,
-                batchEndTime,
-                batchData);
+            DrainHaloPersistenceBatchesForDevice(deviceItem);
+            var remainder = deviceItem.DrainHaloPersistBuffer();
+            var max = HNAAppConstants.MaxMeasurementLogEntries;
+            while (remainder.Count >= max)
+            {
+                var chunk = remainder.GetRange(0, max);
+                remainder.RemoveRange(0, max);
+                SaveHaloPersistRecords(deviceItem, chunk, string.Empty);
+            }
 
-            // Clear the batch for the next recording session
+            if (remainder.Count > 0)
+            {
+                SaveHaloPersistRecords(deviceItem, remainder, "_disconnect");
+            }
+
+            deviceItem.FlushPendingMeasurementLogs();
             deviceItem.ClearMeasurementBatch();
-
-            System.Diagnostics.Debug.WriteLine(
-                $"[HNABleService] Batch saved and cleared for device {deviceItem.DisplayName}. " +
-                $"Records saved: {batchData.Count}, Start: {batchStartTime:HH:mm:ss}, End: {batchEndTime:HH:mm:ss}");
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine(
-                $"[HNABleService] Failed to save measurement batch for {deviceItem.DisplayName}: {ex.Message}");
+            Debug.WriteLine($"[HNABleService] PersistStreamingBatchOnDisconnect failed: {ex.Message}");
         }
     }
 
-    private static bool ShouldAutoStartMeasurementStream(HNAProductId productId)
+    private static void SyncProductIdFromMeterModel(HNABleDeviceModel deviceItem)
     {
-        return productId is HNAProductId.HI9810;
+        var resolved = HNAProductCatalog.ResolveFromMeterModel(deviceItem.MeterModel);
+        if (resolved is { } id && id != deviceItem.ProductId)
+        {
+            deviceItem.ProductId = id;
+        }
     }
 
-    private static bool ShouldShowAllResponsesInHistory(HNAProductId productId)
+    private bool ShouldAutoStartMeasurementStream(HNABleDeviceModel deviceItem)
     {
-        return productId is HNAProductId.HI97105 or HNAProductId.HI98594 or HNAProductId.HI98494;
+        return _handlerRegistry.GetHandler(deviceItem.ProductId)?.ShouldAutoStartMeasurementStream == true;
+    }
+
+    private bool ShouldQueueDeviceInfoInMeasurementHistory(HNABleDeviceModel deviceItem)
+    {
+        return _handlerRegistry.GetHandler(deviceItem.ProductId)?.ShouldQueueDeviceInfoInMeasurementHistory == true;
+    }
+
+    private bool UsesTimedMeasurementBatchPersistence(HNABleDeviceModel deviceItem)
+    {
+        return _handlerRegistry.GetHandler(deviceItem.ProductId)?.UsesTimedMeasurementBatchPersistence == true;
     }
 
     private void ApplyDeviceInfo(HNABleDeviceModel deviceItem, string response)

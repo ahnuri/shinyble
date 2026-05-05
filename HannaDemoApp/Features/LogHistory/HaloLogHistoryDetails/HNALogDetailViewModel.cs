@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using HannaDemoApp.Models;
 using HannaDemoApp.Services.Database;
 
-namespace HannaDemoApp.Features.LogDetail;
+namespace HannaDemoApp.Features.LogHistory;
 
 public partial class HNALogDetailViewModel : ObservableObject
 {

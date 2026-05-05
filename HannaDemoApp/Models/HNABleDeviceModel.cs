@@ -15,6 +15,8 @@ namespace HannaDemoApp.Models;
 public class HNABleDeviceModel : INotifyPropertyChanged
 {
     private readonly Lock _measurementLogLock = new();
+    private readonly object _haloPersistLock = new();
+    private readonly List<HNAMeasurementLogModel> _haloPersistBuffer = [];
     private readonly Queue<HNAMeasurementLogModel> _pendingMeasurementLogs = new();
     private IPeripheral? _device;
     private bool _isConnected;
@@ -23,12 +25,6 @@ public class HNABleDeviceModel : INotifyPropertyChanged
     private string _name;
     private int _signalStrength;
     private string _advertisementHex = string.Empty;
-    private string _meterModel = string.Empty;
-    private string _meterFirmwareVersion = string.Empty;
-    private string _bleFirmwareVersion = string.Empty;
-    private string _serialNumber = string.Empty;
-    private string _userSetName = string.Empty;
-    private string _rawDeviceInfo = string.Empty;
     private string _batteryStatus = "Checking...";
     private string _lastValue = string.Empty;
     private DateTime? _batchStartTime;
@@ -61,9 +57,11 @@ public class HNABleDeviceModel : INotifyPropertyChanged
         _productId = productId;
         _device = device;
         _advertisementHex = advertisementHex;
+        DeviceInfo.PropertyChanged += OnDeviceInfoPropertyChanged;
     }
 
     public string Id { get; }
+    public HNADeviceInfoModel DeviceInfo { get; } = new();
 
     public HNAProductId ProductId
     {
@@ -72,8 +70,14 @@ public class HNABleDeviceModel : INotifyPropertyChanged
         {
             if (SetField(ref _productId, value))
             {
+                OnPropertyChanged(nameof(DetailWorkflow));
+                OnPropertyChanged(nameof(IsHaloDevice));
                 OnPropertyChanged(nameof(UsesLiveMeasurementUi));
+                OnPropertyChanged(nameof(UsesPhotometerDetailsUi));
+                OnPropertyChanged(nameof(UsesMultiMeterDetailsUi));
                 OnPropertyChanged(nameof(ResponseHistoryTitle));
+                OnPropertyChanged(nameof(DeviceDetailsButtonText));
+                OnPropertyChanged(nameof(LiveDetailsButtonText));
             }
         }
     }
@@ -172,77 +176,46 @@ public class HNABleDeviceModel : INotifyPropertyChanged
 
     public string MeterModel
     {
-        get => _meterModel;
-        set
-        {
-            if (SetField(ref _meterModel, value))
-            {
-                OnPropertyChanged(nameof(HasDeviceInfo));
-            }
-        }
+        get => DeviceInfo.MeterModel;
+        set => DeviceInfo.MeterModel = value;
+    }
+
+    public string MeterId
+    {
+        get => DeviceInfo.MeterId;
+        set => DeviceInfo.MeterId = value;
     }
 
     public string MeterFirmwareVersion
     {
-        get => _meterFirmwareVersion;
-        set
-        {
-            if (SetField(ref _meterFirmwareVersion, value))
-            {
-                OnPropertyChanged(nameof(HasDeviceInfo));
-            }
-        }
+        get => DeviceInfo.MeterFirmwareVersion;
+        set => DeviceInfo.MeterFirmwareVersion = value;
     }
 
     public string BleFirmwareVersion
     {
-        get => _bleFirmwareVersion;
-        set
-        {
-            if (SetField(ref _bleFirmwareVersion, value))
-            {
-                OnPropertyChanged(nameof(HasDeviceInfo));
-            }
-        }
+        get => DeviceInfo.BleFirmwareVersion;
+        set => DeviceInfo.BleFirmwareVersion = value;
     }
 
     public string SerialNumber
     {
-        get => _serialNumber;
-        set
-        {
-            if (SetField(ref _serialNumber, value))
-            {
-                OnPropertyChanged(nameof(HasDeviceInfo));
-            }
-        }
+        get => DeviceInfo.SerialNumber;
+        set => DeviceInfo.SerialNumber = value;
     }
 
     public string UserSetName
     {
-        get => _userSetName;
-        set
-        {
-            if (SetField(ref _userSetName, value))
-            {
-                OnPropertyChanged(nameof(DisplayName));
-                OnPropertyChanged(nameof(HasDeviceInfo));
-            }
-        }
+        get => DeviceInfo.UserSetName;
+        set => DeviceInfo.UserSetName = value;
     }
 
-    public string DisplayName => string.IsNullOrWhiteSpace(UserSetName) ? Name : UserSetName;
+    public string DisplayName => Name;
 
     public string RawDeviceInfo
     {
-        get => _rawDeviceInfo;
-        set
-        {
-            if (SetField(ref _rawDeviceInfo, value))
-            {
-                OnPropertyChanged(nameof(HasDeviceInfo));
-            }
-        }
+        get => DeviceInfo.RawDeviceInfo;
+        set => DeviceInfo.RawDeviceInfo = value;
     }
 
     public string BatteryStatus
@@ -264,8 +237,59 @@ public class HNABleDeviceModel : INotifyPropertyChanged
     }
 
     public ObservableCollection<HNAMeasurementLogModel> MeasurementLogs { get; } = [];
-    public bool UsesLiveMeasurementUi => ProductId == HNAProductId.HI9810;
-    public string ResponseHistoryTitle => UsesLiveMeasurementUi ? "Live Measurements" : "Command Responses";
+    public HNADeviceDetailWorkflow DetailWorkflow
+    {
+        get
+        {
+            var model = DeviceInfo.MeterModel;
+            if (!string.IsNullOrWhiteSpace(model))
+            {
+                if (model.StartsWith("HI9810", StringComparison.OrdinalIgnoreCase))
+                {
+                    return HNADeviceDetailWorkflow.LiveReadings;
+                }
+
+                if (model.StartsWith("HI98494", StringComparison.OrdinalIgnoreCase)
+                    || model.StartsWith("HI98594", StringComparison.OrdinalIgnoreCase))
+                {
+                    return HNADeviceDetailWorkflow.MultiMeterDetails;
+                }
+
+                if (model.StartsWith("HI97115", StringComparison.OrdinalIgnoreCase)
+                    || model.StartsWith("HI97105", StringComparison.OrdinalIgnoreCase))
+                {
+                    return HNADeviceDetailWorkflow.PhotometerDetails;
+                }
+            }
+
+            return ProductId switch
+            {
+                HNAProductId.HI9810 => HNADeviceDetailWorkflow.LiveReadings,
+                HNAProductId.HI98494 or HNAProductId.HI98594 => HNADeviceDetailWorkflow.MultiMeterDetails,
+                HNAProductId.HI97115 or HNAProductId.HI97105 => HNADeviceDetailWorkflow.PhotometerDetails,
+                _ => HNADeviceDetailWorkflow.PhotometerDetails
+            };
+        }
+    }
+
+    public bool IsHaloDevice => DetailWorkflow == HNADeviceDetailWorkflow.LiveReadings;
+    public bool UsesLiveMeasurementUi => DetailWorkflow == HNADeviceDetailWorkflow.LiveReadings;
+    public bool UsesPhotometerDetailsUi => DetailWorkflow == HNADeviceDetailWorkflow.PhotometerDetails;
+    public bool UsesMultiMeterDetailsUi => DetailWorkflow == HNADeviceDetailWorkflow.MultiMeterDetails;
+    public string ResponseHistoryTitle => DetailWorkflow switch
+    {
+        HNADeviceDetailWorkflow.LiveReadings => "Live Measurements",
+        HNADeviceDetailWorkflow.MultiMeterDetails => "MultiMeter responses",
+        _ => "Photometer responses"
+    };
+
+    public string DeviceDetailsButtonText => DetailWorkflow switch
+    {
+        HNADeviceDetailWorkflow.LiveReadings => "View Live",
+        HNADeviceDetailWorkflow.MultiMeterDetails => "View meter",
+        _ => "View details"
+    };
+    public string LiveDetailsButtonText => DeviceDetailsButtonText;
 
     public string Subtitle
     {
@@ -279,13 +303,7 @@ public class HNABleDeviceModel : INotifyPropertyChanged
         }
     }
 
-    public bool HasDeviceInfo =>
-        !string.IsNullOrWhiteSpace(MeterModel) ||
-        !string.IsNullOrWhiteSpace(MeterFirmwareVersion) ||
-        !string.IsNullOrWhiteSpace(BleFirmwareVersion) ||
-        !string.IsNullOrWhiteSpace(SerialNumber) ||
-        !string.IsNullOrWhiteSpace(UserSetName) ||
-        !string.IsNullOrWhiteSpace(RawDeviceInfo);
+    public bool HasDeviceInfo => DeviceInfo.HasValues;
 
     public bool HasMeasurementLogs => MeasurementLogs.Count > 0;
     public bool CanConnect => !IsConnected && !IsConnecting;
@@ -303,6 +321,70 @@ public class HNABleDeviceModel : INotifyPropertyChanged
         lock (_measurementLogLock)
         {
             _pendingMeasurementLogs.Enqueue(new HNAMeasurementLogModel(recordedAt, response));
+        }
+    }
+
+    /// <summary>
+    /// Halo live stream: enqueue for UI (pending queue) and for an internal persistence buffer.
+    /// The BLE service drains that buffer off the UI thread so batches still save when Android throttles the main looper.
+    /// </summary>
+    public void QueueHaloLiveMeasurement(DateTime recordedAt, string response)
+    {
+        var forUi = new HNAMeasurementLogModel(recordedAt, response);
+        lock (_measurementLogLock)
+        {
+            _pendingMeasurementLogs.Enqueue(forUi);
+        }
+
+        lock (_haloPersistLock)
+        {
+            _haloPersistBuffer.Add(new HNAMeasurementLogModel(recordedAt, response));
+        }
+    }
+
+    /// <summary>Copies the first <paramref name="batchSize"/> Halo rows without removing them (remove after successful DB write).</summary>
+    public bool TryCopyFrontHaloPersistBatch(int batchSize, out List<HNAMeasurementLogModel> batch)
+    {
+        lock (_haloPersistLock)
+        {
+            if (_haloPersistBuffer.Count < batchSize)
+            {
+                batch = [];
+                return false;
+            }
+
+            batch = _haloPersistBuffer.GetRange(0, batchSize).ToList();
+            return true;
+        }
+    }
+
+    public void RemoveFrontFromHaloPersistBuffer(int count)
+    {
+        lock (_haloPersistLock)
+        {
+            if (count <= 0 || _haloPersistBuffer.Count == 0)
+            {
+                return;
+            }
+
+            var n = Math.Min(count, _haloPersistBuffer.Count);
+            _haloPersistBuffer.RemoveRange(0, n);
+        }
+    }
+
+    /// <summary>Removes all remaining Halo persistence records (e.g. disconnect or final flush).</summary>
+    public List<HNAMeasurementLogModel> DrainHaloPersistBuffer()
+    {
+        lock (_haloPersistLock)
+        {
+            if (_haloPersistBuffer.Count == 0)
+            {
+                return [];
+            }
+
+            var rest = _haloPersistBuffer.ToList();
+            _haloPersistBuffer.Clear();
+            return rest;
         }
     }
 
@@ -341,6 +423,34 @@ public class HNABleDeviceModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
+    private void OnDeviceInfoPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (!string.IsNullOrWhiteSpace(e.PropertyName))
+        {
+            OnPropertyChanged(e.PropertyName);
+        }
+
+        if (e.PropertyName is nameof(HNADeviceInfoModel.UserSetName) or nameof(HNADeviceInfoModel.MeterId))
+        {
+            OnPropertyChanged(nameof(UserSetName));
+            OnPropertyChanged(nameof(MeterId));
+        }
+
+        if (e.PropertyName is nameof(HNADeviceInfoModel.MeterModel))
+        {
+            OnPropertyChanged(nameof(DetailWorkflow));
+            OnPropertyChanged(nameof(IsHaloDevice));
+            OnPropertyChanged(nameof(UsesLiveMeasurementUi));
+            OnPropertyChanged(nameof(UsesPhotometerDetailsUi));
+            OnPropertyChanged(nameof(UsesMultiMeterDetailsUi));
+            OnPropertyChanged(nameof(ResponseHistoryTitle));
+            OnPropertyChanged(nameof(DeviceDetailsButtonText));
+            OnPropertyChanged(nameof(LiveDetailsButtonText));
+        }
+
+        OnPropertyChanged(nameof(HasDeviceInfo));
+    }
+
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
     {
         if (EqualityComparer<T>.Default.Equals(field, value))
@@ -376,7 +486,7 @@ public class HNABleDeviceModel : INotifyPropertyChanged
     /// <summary>
     /// Indicates if this device type supports auto-saved measurement logs.
     /// </summary>
-    public bool SupportsAutoSavedMeasurementLogs => ProductId == HNAProductId.HI9810;
+    public bool SupportsAutoSavedMeasurementLogs => DetailWorkflow == HNADeviceDetailWorkflow.LiveReadings;
 
     /// <summary>
     /// Attempts to extract the measurement value from a device response string.
@@ -400,27 +510,6 @@ public class HNABleDeviceModel : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Checks if the measurement batch has reached the limit for auto-save.
-    /// Returns the batch data if limit is reached, along with timing information.
-    /// </summary>
-    public (bool batchLimitReached, List<HNAMeasurementLogModel> batchData, DateTime batchStartTime, DateTime batchEndTime) 
-        CheckIfBatchLimitReached(int maxEntries = HNAAppConstants.MaxMeasurementLogEntries)
-    {
-        lock (_measurementLogLock)
-        {
-            if (MeasurementLogs.Count >= maxEntries && _batchStartTime.HasValue && MeasurementLogs.Count > 0)
-            {
-                var batchData = new List<HNAMeasurementLogModel>(MeasurementLogs);
-                var startTime = _batchStartTime.Value;
-                var endTime = MeasurementLogs[MeasurementLogs.Count - 1].RecordedAt;
-                return (true, batchData, startTime, endTime);
-            }
-
-            return (false, new List<HNAMeasurementLogModel>(), DateTime.MinValue, DateTime.MinValue);
-        }
-    }
-
-    /// <summary>
     /// Clears the current measurement batch after it has been saved to the database.
     /// Resets the batch state for the next recording session.
     /// </summary>
@@ -435,39 +524,4 @@ public class HNABleDeviceModel : INotifyPropertyChanged
         }
     }
 
-    /// <summary>
-    /// Extracts current measurement logs for persistence by the service layer.
-    /// Clears the internal logs and resets batch tracking.
-    /// </summary>
-    /// <returns>List of measurements to be persisted, or empty if no measurements.</returns>
-    public List<HNAMeasurementLogModel> ExtractMeasurementsForPersistence()
-    {
-        lock (_measurementLogLock)
-        {
-            if (MeasurementLogs.Count == 0)
-            {
-                return [];
-            }
-
-            var records = MeasurementLogs.Select(entry => 
-                new HNAMeasurementLogModel(entry.Timestamp, entry.Response)).ToList();
-
-            MeasurementLogs.Clear();
-            _lastMeasurementTimestamp = null;
-            _batchStartTime = null;
-
-            return records;
-        }
-    }
-
-    /// <summary>
-    /// Gets the batch start time for persistence file naming.
-    /// </summary>
-    public DateTime? GetBatchStartTime()
-    {
-        lock (_measurementLogLock)
-        {
-            return _batchStartTime;
-        }
-    }
 }

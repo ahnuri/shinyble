@@ -2,9 +2,11 @@ using HannaDemoApp.Models;
 
 namespace HannaDemoApp.Core.DeviceHandlers;
 
-// Handles BLE responses for HI97105 (Photometer) devices.
+// Handles BLE responses for HI97115 / HI97105 (Photometer) devices.
 public sealed class HNAPhotometerDeviceHandler : HNADeviceHandlerBase
 {
+    public override bool ShouldQueueDeviceInfoInMeasurementHistory => true;
+
     private static readonly IReadOnlyList<string> Commands =
     [
         "get recall",
@@ -12,6 +14,7 @@ public sealed class HNAPhotometerDeviceHandler : HNADeviceHandlerBase
         "get setup languages,all",
         "get setup tank,all",
         "get battery",
+        "info"
     ];
 
     public override bool TryHandleResponse(HNABleDeviceModel deviceItem, string response)

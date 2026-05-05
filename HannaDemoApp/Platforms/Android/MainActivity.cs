@@ -10,6 +10,21 @@ namespace HannaDemoApp;
 [Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, LaunchMode = LaunchMode.SingleTop, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density , ScreenOrientation = ScreenOrientation.Portrait)]
 public class MainActivity : MauiAppCompatActivity
 {
+    protected override void OnPause()
+    {
+        try
+        {
+            var bleService = IPlatformApplication.Current?.Services?.GetService<IHNABleService>();
+            bleService?.DrainHaloPersistenceBatches();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[BLE] OnPause drain error: {ex}");
+        }
+
+        base.OnPause();
+    }
+
     protected override void OnResume()
     {
         base.OnResume();

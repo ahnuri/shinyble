@@ -3,7 +3,7 @@ using System.Collections.Specialized;
 
 namespace HannaDemoApp.Features.Device;
 
-public partial class HNADevicePage : ContentPage
+public partial class HNAAllDeviceConnectionPage : ContentPage
 {
     // Whether each device's list should auto-scroll to the newest row.
     // True by default; set to false when the user scrolls away from the bottom.
@@ -16,9 +16,9 @@ public partial class HNADevicePage : ContentPage
     // Stored delegates so CollectionChanged handlers can be removed cleanly.
     private readonly Dictionary<string, NotifyCollectionChangedEventHandler> _logHandlers = new();
 
-    private readonly HNADeviceViewModel _viewModel;
+    private readonly HNAAllDeviceConnectionViewModel _viewModel;
 
-    public HNADevicePage(HNADeviceViewModel viewModel)
+    public HNAAllDeviceConnectionPage(HNAAllDeviceConnectionViewModel viewModel)
     {
         InitializeComponent();
         BindingContext = viewModel;

@@ -13,4 +13,13 @@ public interface IHNADeviceHandler
 
     // The list of commands this product family supports (shown in the UI command picker).
     IReadOnlyList<string> GetCommands();
+
+    /// <summary>When true, the service sends <c>set meas on</c> after bonding and on resume.</summary>
+    bool ShouldAutoStartMeasurementStream { get; }
+
+    /// <summary>When true, <c>I,</c> info lines are also appended to the session measurement list.</summary>
+    bool ShouldQueueDeviceInfoInMeasurementHistory { get; }
+
+    /// <summary>When true, the 3600-record auto-save / flush cycle applies (Halo live stream).</summary>
+    bool UsesTimedMeasurementBatchPersistence { get; }
 }

@@ -1,12 +1,12 @@
 using System.Collections;
 using System.Collections.Specialized;
 
-namespace HannaDemoApp.Features.Device.LiveMeasure;
+namespace HannaDemoApp.Features.Device.Halo;
 
 [QueryProperty(nameof(DeviceId), "deviceId")]
-public partial class LiveDetailsPage : ContentPage
+public partial class HNAHaloMeasurePage : ContentPage
 {
-    private readonly LiveDetailsViewModel _viewModel;
+    private readonly HNAHaloMeasurePageViewModel _viewModel;
 
     // 🔥 Controls auto-scroll (same pattern as DevicePage)
     private bool _autoScrollEnabled = true;
@@ -14,7 +14,7 @@ public partial class LiveDetailsPage : ContentPage
     // Prevent recursive scroll events
     private bool _ignoreNextScrollEvent;
 
-    public LiveDetailsPage(LiveDetailsViewModel viewModel)
+    public HNAHaloMeasurePage(HNAHaloMeasurePageViewModel viewModel)
     {
         InitializeComponent();
         _viewModel = viewModel;
@@ -31,11 +31,11 @@ public partial class LiveDetailsPage : ContentPage
         BindableProperty.Create(
             nameof(DeviceId),
             typeof(string),
-            typeof(LiveDetailsPage),
+            typeof(HNAHaloMeasurePage),
             null,
             propertyChanged: (bindable, _, newValue) =>
             {
-                if (bindable is LiveDetailsPage page && newValue is string id)
+                if (bindable is HNAHaloMeasurePage page && newValue is string id)
                 {
                     page._viewModel.SetDeviceIdAndInitialize(id);
                 }
