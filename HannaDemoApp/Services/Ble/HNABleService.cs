@@ -716,20 +716,23 @@ public partial class HNABleService : ObservableObject, IHNABleService
         for (var attempt = 1; attempt <= HNAAppConstants.BondValidationTimeoutSeconds; attempt++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            StatusText = $"Checking {deviceItem.Name} bonding... ({attempt}/{HNAAppConstants.BondValidationTimeoutSeconds})";
+            StatusText = $"Connecting to {deviceItem.Name}... requesting device info ({attempt}/{HNAAppConstants.BondValidationTimeoutSeconds})";
             var requestResult = await RequestDeviceInfoAsync(session, cancellationToken);
             Debug.WriteLine($"[BondValidation] attempt {attempt} ReceivedAny={requestResult.ReceivedAnyResponse}, HasInfo={!string.IsNullOrEmpty(requestResult.InfoResponse)}");
             if (!string.IsNullOrWhiteSpace(requestResult.InfoResponse))
             {
                 return new BondValidationResult(true, requestResult.InfoResponse);
             }
-
-            if (requestResult.ReceivedAnyResponse)
+            
+            // Quick-start burst (first 2 retries), then steady 1-second cadence.
+            // This improves slow Android connect startup while staying robust.
+            var nextDelay = attempt switch
             {
-                return new BondValidationResult(true, null);
-            }
-
-            session.PendingAnyResponse = null;
+                1 => TimeSpan.FromMilliseconds(250),
+                2 => TimeSpan.FromMilliseconds(750),
+                _ => TimeSpan.FromSeconds(1)
+            };
+            await Task.Delay(nextDelay, cancellationToken);
         }
 
         return new BondValidationResult(false, null);
@@ -1158,7 +1161,7 @@ public partial class HNABleService : ObservableObject, IHNABleService
 
         return new ConnectionFailureInfo(
             "Bonding Failed",
-            "Device disconnected due to connection or bonding issue. The meter did not respond to pairing validation commands within 35 seconds.",
+            $"Device disconnected due to connection or bonding issue. The meter did not respond to info commands within {HNAAppConstants.BondValidationTimeoutSeconds} seconds.",
             "{deviceName} disconnected because pairing validation did not complete.");
     }
 

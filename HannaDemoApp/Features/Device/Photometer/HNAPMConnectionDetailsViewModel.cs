@@ -137,7 +137,7 @@ public partial class HNAPMConnectionDetailsViewModel : ObservableObject
             "Cancel",
             null,
             "Download from server",
-            "Choose file (ZIP / HEX / LNG)");
+            "Choose firmware zip file");
 
         if (string.IsNullOrEmpty(choice) || choice == "Cancel")
         {

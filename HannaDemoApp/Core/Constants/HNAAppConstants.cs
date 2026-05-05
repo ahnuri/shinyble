@@ -5,7 +5,7 @@ public static class HNAAppConstants
 {
     public const int DefaultScanTimeoutMs = 10_000;
     public const int DeviceInfoTimeoutSeconds = 6;
-    public const int BondValidationTimeoutSeconds = 35;
+    public const int BondValidationTimeoutSeconds = 30;
     public const int BondValidationAttemptTimeoutSeconds = 1;
     /// <summary>Auto-save batch size (e.g. 1 Hz × 3600 s).</summary>
     public const int MaxMeasurementLogEntries = 3600;

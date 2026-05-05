@@ -60,9 +60,12 @@ public partial class HNAHaloMeasurePageViewModel : ObservableObject
                 SubscribeDevice(_device);
             }
 
+            OnPropertyChanged(nameof(HasDevice));
             UpdateDeviceDisplayProperties();
         }
     }
+
+    public bool HasDevice => Device != null;
 
     public void SetDeviceIdAndInitialize(string? id)
     {

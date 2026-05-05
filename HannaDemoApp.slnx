@@ -1,4 +1,3 @@
 <Solution>
   <Project Path="HannaDemoApp/HannaDemoApp.csproj" />
-  <Project Path="HannaDemoApp.Tests/HannaDemoApp.Tests.csproj" />
 </Solution>

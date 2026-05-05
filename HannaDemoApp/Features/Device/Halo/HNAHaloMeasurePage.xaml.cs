@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Specialized;
+using System.ComponentModel;
+using HannaDemoApp.Core.Constants;
 
 namespace HannaDemoApp.Features.Device.Halo;
 
@@ -7,6 +9,7 @@ namespace HannaDemoApp.Features.Device.Halo;
 public partial class HNAHaloMeasurePage : ContentPage
 {
     private readonly HNAHaloMeasurePageViewModel _viewModel;
+    private bool _isNavigatingAway;
 
     // 🔥 Controls auto-scroll (same pattern as DevicePage)
     private bool _autoScrollEnabled = true;
@@ -46,6 +49,7 @@ public partial class HNAHaloMeasurePage : ContentPage
         base.OnAppearing();
 
         _viewModel.OnPageAppearing();
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
 
         if (_viewModel.MeasurementLogs != null)
             _viewModel.MeasurementLogs.CollectionChanged += OnLogsChanged;
@@ -55,10 +59,36 @@ public partial class HNAHaloMeasurePage : ContentPage
     {
         base.OnDisappearing();
 
+        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+
         if (_viewModel.MeasurementLogs != null)
             _viewModel.MeasurementLogs.CollectionChanged -= OnLogsChanged;
 
         _viewModel.OnPageDisappearing();
+    }
+
+    private async void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(HNAHaloMeasurePageViewModel.HasDevice))
+        {
+            return;
+        }
+
+        if (_isNavigatingAway || _viewModel.HasDevice)
+        {
+            return;
+        }
+
+        _isNavigatingAway = true;
+        try
+        {
+            await MainThread.InvokeOnMainThreadAsync(() =>
+                Shell.Current.GoToAsync($"///{HNAAppConstants.Routes.Devices}"));
+        }
+        finally
+        {
+            _isNavigatingAway = false;
+        }
     }
 
     // 🔹 Initial load → scroll to bottom

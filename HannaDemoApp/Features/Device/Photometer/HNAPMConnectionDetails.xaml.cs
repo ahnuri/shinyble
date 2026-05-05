@@ -1,4 +1,6 @@
+using HannaDemoApp.Core.Constants;
 using Microsoft.Maui.Controls;
+using System.ComponentModel;
 
 namespace HannaDemoApp.Features.Photometer;
 
@@ -7,6 +9,7 @@ namespace HannaDemoApp.Features.Photometer;
 public partial class HNAPMConnectionDetails : ContentPage
 {
     private readonly HNAPMConnectionDetailsViewModel _viewModel;
+    private bool _isNavigatingAway;
 
     public HNAPMConnectionDetails(HNAPMConnectionDetailsViewModel viewModel)
     {
@@ -59,11 +62,37 @@ public partial class HNAPMConnectionDetails : ContentPage
     {
         base.OnAppearing();
         _viewModel.Subscribe();
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
     protected override void OnDisappearing()
     {
+        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
         _viewModel.Unsubscribe();
         base.OnDisappearing();
+    }
+
+    private async void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(HNAPMConnectionDetailsViewModel.HasDevice))
+        {
+            return;
+        }
+
+        if (_isNavigatingAway || _viewModel.HasDevice)
+        {
+            return;
+        }
+
+        _isNavigatingAway = true;
+        try
+        {
+            await MainThread.InvokeOnMainThreadAsync(() =>
+                Shell.Current.GoToAsync($"///{HNAAppConstants.Routes.Devices}"));
+        }
+        finally
+        {
+            _isNavigatingAway = false;
+        }
     }
 }

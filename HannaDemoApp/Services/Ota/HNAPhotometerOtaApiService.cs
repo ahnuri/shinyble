@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using HannaDemoApp.Models;
 using Microsoft.Maui.Devices;
+using Microsoft.Maui.Storage;
 
 namespace HannaDemoApp.Services.Ota;
 
@@ -60,7 +61,7 @@ public sealed class HNAPhotometerOtaApiService : IHNAPhotometerOtaApiService
         var bl = device.BleFirmwareVersion?.Trim() ?? string.Empty;
         var source = DeviceInfo.Platform == DevicePlatform.Android ? "android" : "ios";
 
-        var url = HNAOtaApiConfig.GraphqlUrl;
+        var url = HNAOtaApiConfig.OtaCheckUrl;
         var body = new JsonObject
         {
             ["query"] = CheckFirmwareQuery,
@@ -78,10 +79,11 @@ public sealed class HNAPhotometerOtaApiService : IHNAPhotometerOtaApiService
         try
         {
             using var content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json");
-            json = await PostWithRetryAsync(url, content, cancellationToken).ConfigureAwait(false);
+            json = await PostWithRetryAsync(url, content, source, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
+            OtaDebug($"[OTA][CheckFirmware] Request failed: {ex.Message}");
             return HNAOtaApiResult<HNAPhotometerCloudFirmwareInfo>.Fail(
                 HNAOtaErrorCode.FirmwareCheckFailed,
                 $"Firmware check failed: {ex.Message}");
@@ -91,6 +93,7 @@ public sealed class HNAPhotometerOtaApiService : IHNAPhotometerOtaApiService
         var root = parsed.RootElement;
         if (root.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Array && errors.GetArrayLength() > 0)
         {
+            OtaDebug("[OTA][CheckFirmware] GraphQL errors were returned.");
             return HNAOtaApiResult<HNAPhotometerCloudFirmwareInfo>.Fail(
                 HNAOtaErrorCode.FirmwareCheckFailed,
                 "Cloud returned GraphQL errors while checking firmware.");
@@ -100,6 +103,7 @@ public sealed class HNAPhotometerOtaApiService : IHNAPhotometerOtaApiService
             !data.TryGetProperty("checkFirmwareFile", out var cf) ||
             cf.ValueKind != JsonValueKind.Object)
         {
+            OtaDebug("[OTA][CheckFirmware] data.checkFirmwareFile missing/null.");
             return HNAOtaApiResult<HNAPhotometerCloudFirmwareInfo>.Fail(
                 HNAOtaErrorCode.FirmwareNotFound,
                 "No firmware data returned from server.");
@@ -110,17 +114,18 @@ public sealed class HNAPhotometerOtaApiService : IHNAPhotometerOtaApiService
 
         var info = new HNAPhotometerCloudFirmwareInfo
         {
-            FileName = ReadString(cf, nameof(HNAPhotometerCloudFirmwareInfo.FileName)) ?? string.Empty,
-            FileSize = ReadString(cf, nameof(HNAPhotometerCloudFirmwareInfo.FileSize)) ?? string.Empty,
-            FileVersion = ReadString(cf, nameof(HNAPhotometerCloudFirmwareInfo.FileVersion)) ?? string.Empty,
-            KeyFeatures = ReadString(cf, nameof(HNAPhotometerCloudFirmwareInfo.KeyFeatures)) ?? string.Empty,
-            FileKey = ReadString(cf, nameof(HNAPhotometerCloudFirmwareInfo.FileKey)) ?? string.Empty,
-            HashKey = ReadString(cf, nameof(HNAPhotometerCloudFirmwareInfo.HashKey)) ?? string.Empty,
-            TimeStamp = ReadString(cf, nameof(HNAPhotometerCloudFirmwareInfo.TimeStamp)) ?? string.Empty
+            FileName = ReadString(cf, "fileName") ?? string.Empty,
+            FileSize = ReadString(cf, "fileSize") ?? string.Empty,
+            FileVersion = ReadString(cf, "fileVersion") ?? string.Empty,
+            KeyFeatures = ReadString(cf, "keyFeatures") ?? string.Empty,
+            FileKey = ReadString(cf, "fileKey") ?? string.Empty,
+            HashKey = ReadString(cf, "hashKey") ?? string.Empty,
+            TimeStamp = ReadString(cf, "timeStamp") ?? string.Empty
         };
 
         if (string.IsNullOrWhiteSpace(info.FileName))
         {
+            OtaDebug("[OTA][CheckFirmware] checkFirmwareFile returned object but fileName is empty.");
             return HNAOtaApiResult<HNAPhotometerCloudFirmwareInfo>.Fail(
                 HNAOtaErrorCode.FirmwareNotFound,
                 "No downloadable firmware was returned.");
@@ -157,7 +162,7 @@ public sealed class HNAPhotometerOtaApiService : IHNAPhotometerOtaApiService
 
         var json = JsonSerializer.Serialize(payload);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        using var response = await PostResponseWithRetryAsync(HNAOtaApiConfig.FirmwareDownloadUrl, content, cancellationToken)
+        using var response = await PostResponseWithRetryAsync(HNAOtaApiConfig.FirmwareDownloadUrl, content, source, cancellationToken)
             .ConfigureAwait(false);
 
         if (!response.IsSuccessStatusCode || response.Content == null)
@@ -172,9 +177,9 @@ public sealed class HNAPhotometerOtaApiService : IHNAPhotometerOtaApiService
         return HNAOtaApiResult<string>.Success(destinationPath);
     }
 
-    private static async Task<string> PostWithRetryAsync(Uri url, HttpContent content, CancellationToken cancellationToken)
+    private static async Task<string> PostWithRetryAsync(Uri url, HttpContent content, string source, CancellationToken cancellationToken)
     {
-        using var response = await PostResponseWithRetryAsync(url, content, cancellationToken).ConfigureAwait(false);
+        using var response = await PostResponseWithRetryAsync(url, content, source, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             throw new HttpRequestException($"HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
@@ -183,7 +188,7 @@ public sealed class HNAPhotometerOtaApiService : IHNAPhotometerOtaApiService
         return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<HttpResponseMessage> PostResponseWithRetryAsync(Uri url, HttpContent content, CancellationToken cancellationToken)
+    private static async Task<HttpResponseMessage> PostResponseWithRetryAsync(Uri url, HttpContent content, string source, CancellationToken cancellationToken)
     {
         Exception? last = null;
         for (var attempt = 1; attempt <= MaxRetryAttempts; attempt++)
@@ -198,8 +203,23 @@ public sealed class HNAPhotometerOtaApiService : IHNAPhotometerOtaApiService
                 {
                     c.Headers.TryAddWithoutValidation(header.Key, header.Value);
                 }
+                using var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = c
+                };
 
-                var response = await Http.PostAsync(url, c, cancellationToken).ConfigureAwait(false);
+                var appVersion = HNAOtaApiConfig.BuildAppVersionHeader(source);
+                request.Headers.TryAddWithoutValidation(HNAOtaApiConfig.AppVersionHeaderName, appVersion);
+                // Keep compatibility with backends expecting snake_case header.
+                request.Headers.TryAddWithoutValidation("app_version", appVersion);
+
+                var accessToken = GetAccessToken();
+                if (!string.IsNullOrWhiteSpace(accessToken))
+                {
+                    request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {accessToken}");
+                }
+
+                var response = await Http.SendAsync(request, cancellationToken).ConfigureAwait(false);
                 if ((int)response.StatusCode >= 500 && attempt < MaxRetryAttempts)
                 {
                     response.Dispose();
@@ -237,4 +257,23 @@ public sealed class HNAPhotometerOtaApiService : IHNAPhotometerOtaApiService
         var hash = SHA256.HashData(fs);
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
+
+    private static string GetAccessToken()
+    {
+        var keys = new[] { "access_token", "accessToken", "token", "jwt" };
+        foreach (var key in keys)
+        {
+            var value = Preferences.Default.Get(key, string.Empty);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return string.Empty;
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private static void OtaDebug(string message) =>
+        System.Diagnostics.Debug.WriteLine(message);
 }
