@@ -5,6 +5,7 @@
     x:Class="HannaDemoApp.Features.Photometer.HNAPMConnectionDetails"
     Title="Photometer Details">
 
+    <Grid>
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="14">
 
@@ -63,10 +64,43 @@
                 </Grid>
             </VerticalStackLayout>
 
-            <Button Text="Refresh device info"
-                    Command="{Binding RefreshDeviceInfoCommand}"
-                    IsEnabled="{Binding IsNotLoadingDeviceInfo}"/>
+            <Button Text="Update Device Firmware"
+                    Command="{Binding UpdateDeviceFirmwareCommand}"
+                    IsEnabled="{Binding CanTapFirmwareButton}"/>
 
         </VerticalStackLayout>
     </ScrollView>
+
+        <!-- OTA progress overlay (similar to native HUD) -->
+        <Grid IsVisible="{Binding IsOtaInProgress}"
+              BackgroundColor="#99000000"
+              Padding="24">
+            <Border Stroke="#33000000"
+                    StrokeThickness="1"
+                    BackgroundColor="{AppThemeBinding Light=#FFFFFFFF, Dark=#FF2C2C2E}"
+                    Padding="20"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    MaximumWidthRequest="340">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Firmware update"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           HorizontalTextAlignment="Center"/>
+                    <Label Text="{Binding OtaProgressTitle}"
+                           FontSize="14"
+                           LineBreakMode="WordWrap"
+                           HorizontalTextAlignment="Center"/>
+                    <ProgressBar Progress="{Binding OtaProgress}"
+                                 HeightRequest="6"
+                                 Margin="0,4,0,0"/>
+                    <ActivityIndicator IsRunning="{Binding IsOtaInProgress}"
+                                       HeightRequest="32"/>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </Grid>
 </ContentPage>

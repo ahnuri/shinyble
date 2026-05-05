@@ -55,7 +55,7 @@
                                               ColumnDefinitions="Auto,*,Auto"
                                               ColumnSpacing="8"
                                               VerticalOptions="Center"
-                                              HorizontalOptions="FillAndExpand">
+                                              HorizontalOptions="Fill">
 
                                             <!-- Tap entire row -->
                                             <Grid.GestureRecognizers>
@@ -78,7 +78,7 @@
                                                    FontSize="16"
                                                    FontAttributes="Bold"
                                                    VerticalOptions="Center"
-                                                   HorizontalOptions="FillAndExpand"
+                                                   HorizontalOptions="Fill"
                                                    LineBreakMode="TailTruncation"
                                                    TextColor="{AppThemeBinding Light={StaticResource HannaTextPrimary}, Dark={StaticResource HannaTextPrimaryDark}}"/>
 

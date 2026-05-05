@@ -43,6 +43,19 @@ public interface IHNABleService : IDisposable
     // ===================== COMMANDS =====================================================
     Task SendCommandAsync(HNABleDeviceModel device, string command); // Send raw command to device
 
+    /// <summary>
+    /// Receives photometer firmware OTA acknowledgements (SC/SO/SF/SP/SV) on the BLE notification thread.
+    /// Only one subscriber per device; disposing clears the handler.
+    /// </summary>
+    IDisposable SubscribePhotometerOtaResponses(HNABleDeviceModel device, Action<string> onPhotometerOtaLine);
+
+    /// <summary>Writes a raw payload to the UART TX characteristic without response (used for SF, chunk data).</summary>
+    Task WritePhotometerOtaWithoutResponseAsync(HNABleDeviceModel device, byte[] payload, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends a text command during photometer OTA using write-without-response (matches native <c>sendCMD</c>).
+    /// </summary>
+    Task SendPhotometerOtaCommandAsync(HNABleDeviceModel device, string command, CancellationToken cancellationToken = default);
 
     // ===================== BACKGROUND RESUME =====================================================
     Task ResumeLiveUpdatesAsync(CancellationToken cancellationToken = default); // Resume streaming after app foreground

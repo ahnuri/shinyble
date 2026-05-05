@@ -9,6 +9,7 @@ using HannaDemoApp.Features.UserSettings;
 using HannaDemoApp.Services.Background;
 using HannaDemoApp.Services.Ble;
 using HannaDemoApp.Services.Ble.Permission;
+using HannaDemoApp.Services.Ota;
 using HannaDemoApp.Services.Database;
 using HannaDemoApp.Services.Dialog;
 using HannaDemoApp.Services.Navigation;
@@ -73,6 +74,10 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IHNABackgroundService, HNANoOpBackgroundService>();
 #endif
 		builder.Services.AddSingleton<IHNABleService, HNABleService>();
+		builder.Services.AddSingleton<IHNAPhotometerOtaApiService, HNAPhotometerOtaApiService>();
+		builder.Services.AddTransient<IPhotometerOtaBleTransport, HNAPhotometerOtaBleTransport>();
+		builder.Services.AddTransient<HNAPhotometerOtaCoordinator>();
+		builder.Services.AddTransient<HNAPhotometerOtaService>();
 
 		// Features - ViewModels
 		builder.Services.AddTransient<HNALandingViewModel>();

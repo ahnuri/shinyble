@@ -66,6 +66,11 @@
   <RuntimeIdentifier>ios-arm64</RuntimeIdentifier>
 </PropertyGroup>
 
+	<!-- Mac Catalyst: both RIDs so restore/clean work on Intel and Apple Silicon (NETSDK1047) -->
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-maccatalyst'">
+		<RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<!-- App Icon -->
 		<!-- <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" /> -->

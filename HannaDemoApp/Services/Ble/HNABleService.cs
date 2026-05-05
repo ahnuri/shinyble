@@ -10,6 +10,7 @@ using HannaDemoApp.Models;
 using HannaDemoApp.Services.Background;
 using HannaDemoApp.Services.Database;
 using HannaDemoApp.Services.Dialog;
+using HannaDemoApp.Services.Ota;
 using Shiny;
 using Shiny.BluetoothLE;
 
@@ -275,6 +276,75 @@ public partial class HNABleService : ObservableObject, IHNABleService
         }
 
         await SendCommandAsync(session, command, CancellationToken.None);
+    }
+
+    /// <inheritdoc />
+    public IDisposable SubscribePhotometerOtaResponses(HNABleDeviceModel device, Action<string> onPhotometerOtaLine)
+    {
+        ArgumentNullException.ThrowIfNull(device, nameof(device));
+        ArgumentNullException.ThrowIfNull(onPhotometerOtaLine, nameof(onPhotometerOtaLine));
+
+        if (!_deviceSessions.TryGetValue(device.Id, out var session))
+        {
+            throw new InvalidOperationException("Photometer must be connected before starting OTA.");
+        }
+
+        session.ResetUartBufferForOta();
+        session.PhotometerOtaHandler = onPhotometerOtaLine;
+        return new PhotometerOtaSubscription(() =>
+        {
+            if (_deviceSessions.TryGetValue(device.Id, out var s))
+            {
+                s.PhotometerOtaHandler = null;
+                s.ResetUartBufferForOta();
+            }
+        });
+    }
+
+    /// <inheritdoc />
+    public async Task WritePhotometerOtaWithoutResponseAsync(
+        HNABleDeviceModel device,
+        byte[] payload,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(device, nameof(device));
+        ArgumentNullException.ThrowIfNull(payload, nameof(payload));
+
+        if (!_deviceSessions.TryGetValue(device.Id, out var session))
+        {
+            throw new InvalidOperationException("Photometer must be connected for OTA writes.");
+        }
+
+        // Use a long-lived token so writes are not cut off by UI timers; user cancel still applies when linked upstream.
+        await session.Peripheral.WriteCharacteristicAsync(
+            session.WriteServiceUuid,
+            session.WriteCharUuid,
+            payload,
+            withResponse: false,
+            cancelToken: cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task SendPhotometerOtaCommandAsync(
+        HNABleDeviceModel device,
+        string command,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(device, nameof(device));
+        ArgumentException.ThrowIfNullOrWhiteSpace(command, nameof(command));
+
+        if (!device.IsConnected || !_deviceSessions.TryGetValue(device.Id, out var session))
+        {
+            throw new InvalidOperationException("Photometer must be connected for OTA commands.");
+        }
+
+        var commandBytes = Encoding.UTF8.GetBytes(command);
+        await session.Peripheral.WriteCharacteristicAsync(
+            session.WriteServiceUuid,
+            session.WriteCharUuid,
+            commandBytes,
+            withResponse: false,
+            cancelToken: cancellationToken);
     }
 
     #endregion
@@ -774,9 +844,18 @@ public partial class HNABleService : ObservableObject, IHNABleService
             .Subscribe(
                 onNext: result =>
                 {
-                    var response = DecodeResponse(result.Data);
-                    if (!string.IsNullOrWhiteSpace(response) && session != null)
-                        HandleIncomingResponse(deviceItem, session, response); //sc3
+                    if (session == null)
+                    {
+                        return;
+                    }
+
+                    foreach (var line in session.ConsumeNotifyBytes(result.Data))
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            HandleIncomingResponse(deviceItem, session, line);
+                        }
+                    }
                 },
                 onError: _ => { /* Connection dropped — WhenDisconnected() subscription handles cleanup */ });
 
@@ -792,6 +871,14 @@ public partial class HNABleService : ObservableObject, IHNABleService
     // and queues it onto the device model for display.
     private void HandleIncomingResponse(HNABleDeviceModel deviceItem, DeviceSession session, string response)
     {
+        if (!string.IsNullOrWhiteSpace(response) &&
+            IsPhotometerOtaAck(response) &&
+            session.PhotometerOtaHandler != null)
+        {
+            session.PhotometerOtaHandler(response);
+            return;
+        }
+
         session.PendingAnyResponse?.TrySetResult(response);
 
         if (response.StartsWith("I,", StringComparison.OrdinalIgnoreCase))
@@ -1002,7 +1089,14 @@ public partial class HNABleService : ObservableObject, IHNABleService
             cancelToken: cancellationToken);
     }
 
-    private static string DecodeResponse(byte[]? bytes)
+    private static bool IsPhotometerOtaAck(string response)
+    {
+        return HNAOtaProtocol.IsOtaAck(response);
+    }
+
+    private static string DecodeResponse(byte[]? bytes) => DecodeResponseStatic(bytes);
+
+    private static string DecodeResponseStatic(byte[]? bytes)
     {
         if (bytes == null || bytes.Length == 0)
         {
@@ -1081,6 +1175,9 @@ public partial class HNABleService : ObservableObject, IHNABleService
         string writeCharUuid,
         IDisposable notifySubscription)
     {
+        private readonly Lock _uartBufferLock = new();
+        private readonly StringBuilder _uartBuffer = new();
+
         public IPeripheral Peripheral { get; } = peripheral;
         public string WriteServiceUuid { get; } = writeServiceUuid;
         public string WriteCharUuid { get; } = writeCharUuid;
@@ -1088,6 +1185,88 @@ public partial class HNABleService : ObservableObject, IHNABleService
         public TaskCompletionSource<string>? PendingInfoResponse { get; set; }
         public TaskCompletionSource<string>? PendingAnyResponse { get; set; }
         public bool MeasurementStreamStarted { get; set; }
+        public Action<string>? PhotometerOtaHandler { get; set; }
+
+        public void ResetUartBufferForOta()
+        {
+            lock (_uartBufferLock)
+            {
+                _uartBuffer.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Accumulates Nordic UART notify payloads and yields complete text lines (handles CRLF and split packets).
+        /// Outside OTA, each notification is treated as one message (previous app behavior).
+        /// </summary>
+        public IEnumerable<string> ConsumeNotifyBytes(byte[]? data)
+        {
+            if (PhotometerOtaHandler == null)
+            {
+                var one = DecodeResponseStatic(data);
+                return string.IsNullOrWhiteSpace(one) ? [] : [one.Trim()];
+            }
+
+            lock (_uartBufferLock)
+            {
+                if (data is { Length: > 0 })
+                {
+                    _uartBuffer.Append(Encoding.UTF8.GetString(data));
+                }
+
+                var lines = new List<string>();
+                while (true)
+                {
+                    var s = _uartBuffer.ToString();
+                    if (s.Length == 0)
+                    {
+                        break;
+                    }
+
+                    var nl = s.IndexOf('\n');
+                    if (nl < 0)
+                    {
+                        var t = s.Trim('\0', '\r');
+                        var comma = t.IndexOf(',');
+                        var head = comma >= 0 ? t[..comma] : t;
+                        if (PhotometerOtaHandler != null && comma >= 0 &&
+                            HNAOtaProtocol.Acks.All.Contains(head))
+                        {
+                            _uartBuffer.Clear();
+                            lines.Add(t.Trim());
+                            continue;
+                        }
+
+                        break;
+                    }
+
+                    var raw = s[..nl].TrimEnd('\r');
+                    _uartBuffer.Remove(0, nl + 1);
+                    if (raw.Length > 0)
+                    {
+                        lines.Add(raw.Trim());
+                    }
+                }
+
+                return lines;
+            }
+        }
+    }
+
+    private sealed class PhotometerOtaSubscription : IDisposable
+    {
+        private readonly Action _onDispose;
+        private int _disposed;
+
+        public PhotometerOtaSubscription(Action onDispose) => _onDispose = onDispose;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) == 0)
+            {
+                _onDispose();
+            }
+        }
     }
 
     private sealed record ConnectionFailureInfo(string AlertTitle, string AlertMessage, string StatusMessage);

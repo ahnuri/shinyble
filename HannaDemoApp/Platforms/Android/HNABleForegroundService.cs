@@ -69,7 +69,14 @@ public class HNABleForegroundService : Service
             }
 
             ReleaseCpuWakeLock();
-            _cpuWakeLock = pm.NewWakeLock(WakeLockFlags.Partial, $"{PackageName}:BleMeasurementStream");
+            var wakeLock = pm.NewWakeLock(WakeLockFlags.Partial, $"{PackageName}:BleMeasurementStream");
+            if (wakeLock == null)
+            {
+                Log.Warn(nameof(HNABleForegroundService), "NewWakeLock returned null.");
+                return;
+            }
+
+            _cpuWakeLock = wakeLock;
             _cpuWakeLock.SetReferenceCounted(false);
             _cpuWakeLock.Acquire();
         }
